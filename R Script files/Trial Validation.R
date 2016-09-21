@@ -81,6 +81,15 @@ head(raw.data.long)
 raw.data.long <- group_by(raw.data.long, subject, trial) %>%
   arrange(xvals)
 
+#### Voltage to Newtons ####
+# The force transducer reports the force in voltage. A calibration set was
+# created to convert from the voltage to Newtons. This regression is not
+# presented here but the coefficients are used.
+
+raw.data.long <- raw.data.long %>%
+  mutate(center.N = 15.2713 + 26.199*center,
+         newtons = 15.2713 + 26.199*yvals)
+
 vision <- filter(rawtrace, condition == "cond2")
 
 ggplot(data = vision, aes(x = xvals, y = yvals)) +
