@@ -72,6 +72,15 @@ raw.data.long$xvals <- as.numeric(raw.data.long$xvals)
 
 head(raw.data.long)
 
+#### Reorder data frame ####
+# Right now, the data frame is organized by subject, trial, point. This means
+# that all of the 0 time point values come first for all participants, then 1,
+# etc. This is impractical and unviewable. Dataframe will be resorted to haveall
+# of the points for a single participant's trial list in succession.
+
+raw.data.long <- group_by(raw.data.long, subject, trial) %>%
+  arrange(xvals)
+
 vision <- filter(rawtrace, condition == "cond2")
 
 ggplot(data = vision, aes(x = xvals, y = yvals)) +
