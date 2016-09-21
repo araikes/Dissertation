@@ -125,7 +125,7 @@ range(force.valid$diff)
 
 trials.valid <- force.valid %>%
   group_by(subject, center, center.N) %>%
-  filter(valid.newtons >= 0.7) %>%
+  filter(valid.newtons >= 0.6) %>%
   summarise(count = n())
 
 vision <- filter(rawtrace, condition == "cond2")
