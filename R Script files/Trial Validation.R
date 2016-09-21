@@ -101,6 +101,33 @@ raw.data.long <- mutate(raw.data.long,
                         screen.lower.N = 0.35*(center.N/0.4),
                         screen.upper.N = 0.45*(center.N/0.4))
 
+#### Compute valid points ####
+# Valid points are those which fall between screen.lower and screen.upper.
+# For validation purposes, this will be computed for voltage and Newtons
+raw.data.long <- mutate(
+  raw.data.long,
+  valid.point.volts = ifelse(yvals >= screen.lower &
+                         yvals <= screen.upper,
+                       1, 0),
+  valid.point.newtons = ifelse(newtons >= screen.lower.N &
+                           newtons <= screen.upper.N, 1 , 0))
+
+force.valid <- raw.data.long %>%
+  group_by(subject, trial, center, center.N) %>%
+  summarise(count = n(),
+            valid.volts = sum(valid.point.volts)/count,
+            valid.newtons = sum(valid.point.newtons)/count) %>%
+  mutate(diff = valid.newtons - valid.volts)
+
+range(force.valid$valid.volts)
+range(force.valid$valid.newtons)
+range(force.valid$diff)
+
+trials.valid <- force.valid %>%
+  group_by(subject, center, center.N) %>%
+  filter(valid.newtons >= 0.7) %>%
+  summarise(count = n())
+
 vision <- filter(rawtrace, condition == "cond2")
 
 ggplot(data = vision, aes(x = xvals, y = yvals)) +
