@@ -58,14 +58,19 @@ raw.data.long <- raw.data.long %>%
   ungroup() %>%
   select(-condition)
 
+#### Edit subjects, trials, and xvals ####
+# As of right now, the subject, trial, and xval columns are strings. These
+# unusable in their current form. These values will be transformed from string
+# to numeric using regex functions.
+raw.data.long$subject <- gsub("S","", raw.data.long$subject)
+raw.data.long$trial <- gsub("tr", "", raw.data.long$trial)
+raw.data.long$xvals <- gsub("X", "", raw.data.long$xvals)
 
-rawtrace$subject <- gsub("S","", rawtrace$subject)
-rawtrace$trial <- gsub("tr", "", rawtrace$trial)
-rawtrace$xvals <- gsub("X", "", rawtrace$xvals)
+raw.data.long$subject <- as.numeric(raw.data.long$subject)
+raw.data.long$trial <- as.numeric(raw.data.long$trial)
+raw.data.long$xvals <- as.numeric(raw.data.long$xvals)
 
-rawtrace$subject <- as.numeric(rawtrace$subject)
-rawtrace$trial <- as.numeric(rawtrace$trial)
-rawtrace$xvals <- as.numeric(rawtrace$xvals)
+head(raw.data.long)
 
 vision <- filter(rawtrace, condition == "cond2")
 
