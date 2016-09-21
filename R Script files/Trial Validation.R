@@ -90,6 +90,17 @@ raw.data.long <- raw.data.long %>%
   mutate(center.N = 15.2713 + 26.199*center,
          newtons = 15.2713 + 26.199*yvals)
 
+#### Get screen scale values ####
+# The target line (center) was at 40% MVC. The screen was scaled to 35-45% MVC.
+# In order to determine how much of each trial was within view, the lower and
+# upper screen bounds need to be computed.
+
+raw.data.long <- mutate(raw.data.long,
+                        screen.lower = -0.58 + 0.35*((center + 0.58)/0.4),
+                        screen.upper = -0.58 + 0.45*((center + 0.58)/0.4),
+                        screen.lower.N = 0.35*(center.N/0.4),
+                        screen.upper.N = 0.45*(center.N/0.4))
+
 vision <- filter(rawtrace, condition == "cond2")
 
 ggplot(data = vision, aes(x = xvals, y = yvals)) +
