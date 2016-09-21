@@ -34,11 +34,30 @@
 library(tidyverse)
 library(ggplot2)
 
-# Load data
-rawtrace <- read.csv("Raw_MVC10.csv") %>%
+#### Load data ####
+# Data is located in ./Data Files as a CSV file
+raw.data <- read.csv("./Data Files/Raw_Vision.csv")
+
+# View data
+head(raw.data)
+ncol(raw.data)
+
+# Fix column names
+colnames(raw.data)[2502:2505] <- c("subject", "condition", "trial", "center")
+head(raw.data)
+
+# Reshape to long format
+raw.data.long <- raw.data %>%
   select(-X) %>%
   group_by(subject, condition, trial) %>%
-  gather(xvals, yvals, -subject:-center) 
+  gather(xvals, yvals, -subject:-center)
+
+# Remove condition column
+# This was necessary in the pilot stage but is no longer required.
+raw.data.long <- raw.data.long %>%
+  ungroup() %>%
+  select(-condition)
+
 
 rawtrace$subject <- gsub("S","", rawtrace$subject)
 rawtrace$trial <- gsub("tr", "", rawtrace$trial)
