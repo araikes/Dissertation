@@ -116,17 +116,7 @@ force.valid <- raw.data.long %>%
   group_by(subject, trial, center, center.N) %>%
   summarise(count = n(),
             valid.volts = sum(valid.point.volts)/count,
-            valid.newtons = sum(valid.point.newtons)/count) %>%
-  mutate(diff = valid.newtons - valid.volts)
-
-range(force.valid$valid.volts)
-range(force.valid$valid.newtons)
-range(force.valid$diff)
-
-trials.valid <- force.valid %>%
-  group_by(subject, center, center.N) %>%
-  filter(valid.newtons >= 0.6) %>%
-  summarise(count = n())
+            valid.newtons = sum(valid.point.newtons)/count)
 
 #### Compute RMSE ####
 # Create a summary data frame with subject, trial, center.N, and RMSE. This
