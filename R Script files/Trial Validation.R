@@ -128,6 +128,14 @@ trials.valid <- force.valid %>%
   filter(valid.newtons >= 0.6) %>%
   summarise(count = n())
 
+#### Compute RMSE ####
+# Create a summary data frame with subject, trial, center.N, and RMSE. This
+# frame will ultimately be merged with demographic frames, MMSE frames, DFA
+# frames, etc.
+trial.summary <- raw.data.long %>%
+  group_by(subject, trial, center.N) %>%
+  summarise(rmse = sqrt(mean((newtons-center.N)^2)))
+
 vision <- filter(rawtrace, condition == "cond2")
 
 ggplot(data = vision, aes(x = xvals, y = yvals)) +
