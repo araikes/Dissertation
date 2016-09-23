@@ -134,12 +134,58 @@ trials.valid <- force.valid %>%
 # frames, etc.
 trial.summary <- raw.data.long %>%
   group_by(subject, trial, center.N) %>%
-  summarise(rmse = sqrt(mean((newtons-center.N)^2)))
+  summarise(rmse = sqrt(mean((newtons-center.N)^2))) %>%
+  ungroup() %>%
+  mutate(valid.points = force.valid$valid.newtons)
 
-vision <- filter(rawtrace, condition == "cond2")
+#### Create validation plots ####
+# These plots will plot the raw trace from 4sec-29sec. The first 4 and last 1
+# sec were dropped in the original data processing pipeline. These plots will
+# also annotate onto them the RMSE and the number of points inside the window
+# for full evaluation.
 
-ggplot(data = vision, aes(x = xvals, y = yvals)) +
-  geom_line() +
-  facet_grid(subject ~ trial, scale= "free") +
-  geom_hline(aes(yintercept = center))
+# Get vector of unique subject IDs to loop over
+subject.vec <- ungroup(trial.summary) %>% 
+  distinct(subject) %>% 
+  select(subject) %>%
+  collect %>% .[["subject"]]
+
+# Create list for plot capture
+plot_list = list()
+
+# Make plots
+for (i in 1:length(subject.vec)) {
+  tmp <- filter(raw.data.long, subject == subject.vec[i]) %>%
+    select(-subject)
   
+  labels <- filter(trial.summary, subject == subject.vec[i]) %>%
+    select(trial, rmse, valid.points)
+  
+  p <- ggplot(data = tmp, aes(x = xvals, y = newtons)) +
+    facet_grid(trial ~ ., scales = "free") +
+    geom_line() +
+    xlim(0, 2500) + 
+    geom_hline(aes(yintercept = center.N), col = "blue") +
+    geom_hline(aes(yintercept = screen.lower.N), col = "blue") +
+    geom_hline(aes(yintercept = screen.upper.N), col = "blue") +
+    geom_text(aes(x = 1250, y = Inf, hjust = 1, vjust = 1.1,
+                  label = paste0("RMSE: ", round(rmse, 3)),
+                  group = NULL),
+              data = labels) +
+    geom_text(aes(x = 1750, y = Inf, hjust = 1, vjust = 1.1,
+                  label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
+                  group = NULL),
+              data = labels) +
+    ggtitle(paste("Participant: ", subject.vec[i])) +
+    theme_bw()
+  
+  plot_list[[i]] <- p
+}
+
+# Write plots
+pdf("Plots/Trial Validation.pdf")
+for (i in 1:length(subject.vec)) {
+  print(plot_list[[i]])
+}
+dev.off
+
