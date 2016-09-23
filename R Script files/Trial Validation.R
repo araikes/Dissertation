@@ -168,11 +168,11 @@ for (i in 1:length(subject.vec)) {
     geom_hline(aes(yintercept = center.N), col = "blue") +
     geom_hline(aes(yintercept = screen.lower.N), col = "blue") +
     geom_hline(aes(yintercept = screen.upper.N), col = "blue") +
-    geom_text(aes(x = 1250, y = Inf, hjust = 1, vjust = 1.1,
+    geom_text(aes(x = 500, y = Inf, hjust = 1, vjust = 1.1,
                   label = paste0("RMSE: ", round(rmse, 3)),
                   group = NULL),
               data = labels) +
-    geom_text(aes(x = 1750, y = Inf, hjust = 1, vjust = 1.1,
+    geom_text(aes(x = 2000, y = Inf, hjust = 1, vjust = 1.1,
                   label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
                   group = NULL),
               data = labels) +
@@ -182,10 +182,17 @@ for (i in 1:length(subject.vec)) {
   plot_list[[i]] <- p
 }
 
-# Write plots
-pdf("Plots/Trial Validation.pdf")
+# Write plots to Plots folder
+my.dir <- getwd()
+
+setwd("Plots")
+
+pdf("Trial Validation.pdf")
 for (i in 1:length(subject.vec)) {
   print(plot_list[[i]])
 }
-dev.off
+dev.off()
+
+# Reset working directory
+setwd(my.dir)
 
