@@ -98,8 +98,8 @@ raw.data.long <- raw.data.long %>%
 raw.data.long <- mutate(raw.data.long,
                         screen.lower = -0.58 + 0.35*((center + 0.58)/0.4),
                         screen.upper = -0.58 + 0.45*((center + 0.58)/0.4),
-                        screen.lower.N = 0.35*(center.N/0.4),
-                        screen.upper.N = 0.45*(center.N/0.4))
+                        screen.lower.N = 15.2713 + 26.199*screen.lower,
+                        screen.upper.N = 15.2713 + 26.199*screen.upper)
 
 #### Compute valid points ####
 # Valid points are those which fall between screen.lower and screen.upper.
