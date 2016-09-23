@@ -186,3 +186,12 @@ dev.off()
 # Reset working directory
 setwd(my.dir)
 
+#### Clean up workspace ####
+# Remove objects for which persistence is not required.
+rm(
+  list = c(
+    "p", "plot_list", "subject.vec", "i", "tmp", "labels", "raw.data.long", 
+    "raw.data", "my.dir", "force.valid"
+  )
+)
+
