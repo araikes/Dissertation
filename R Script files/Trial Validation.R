@@ -184,12 +184,70 @@ dev.off()
 # Reset working directory
 setwd(my.dir)
 
+#### Create validation plots for trials with >10% of points in view ####
+# Create list for valid trials
+# Valid trials are those with > 10% of points in view. This will maximize the 
+# potential of eliminating invalid trials. Further evaluation will be based on
+# visual inspection of the plots.
+plot_list_valid = list()
+trial.vec <- vector()
+
+# Make plots
+for (i in 1:length(subject.vec)) {
+  tmp <- filter(raw.data.long, subject == subject.vec[i]) %>%
+    select(-subject)
+  
+  labels <- filter(trial.summary, subject == subject.vec[i]) %>%
+    select(trial, rmse, valid.points) %>%
+    filter(valid.points >= 0.1)
+  
+  if (nrow(labels) == 0) {
+    next
+  }
+  
+  tmp <- tmp %>%
+    semi_join(labels, by = "trial")
+  
+  p <- ggplot(data = tmp, aes(x = xvals, y = newtons)) +
+    facet_grid(trial ~ ., scales = "free") +
+    geom_line() +
+    xlim(0, 2500) + 
+    geom_hline(aes(yintercept = center.N), col = "blue") +
+    geom_hline(aes(yintercept = screen.lower.N), col = "blue") +
+    geom_hline(aes(yintercept = screen.upper.N), col = "blue") +
+    geom_text(aes(x = 500, y = Inf, hjust = 1, vjust = 1.1,
+                  label = paste0("RMSE: ", round(rmse, 3)),
+                  group = NULL),
+              data = labels) +
+    geom_text(aes(x = 2000, y = Inf, hjust = 1, vjust = 1.1,
+                  label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
+                  group = NULL),
+              data = labels) +
+    ggtitle(paste("Participant: ", subject.vec[i])) +
+    theme_bw()
+  
+  plot_list_valid[[i]] <- p
+  trial.vec <- c(trial.vec, i)
+}
+
+# Write plots to Plots folder
+setwd("Plots")
+
+pdf("Trial Validation 2.pdf")
+for (i in trial.vec) {
+  print(plot_list_valid[[i]])
+}
+dev.off()
+
+# Reset working directory
+setwd(my.dir)
+
 #### Clean up workspace ####
 # Remove objects for which persistence is not required.
 rm(
   list = c(
-    "p", "plot_list", "subject.vec", "i", "tmp", "labels", "raw.data.long", 
-    "raw.data", "my.dir", "force.valid"
+    "p", "plot_list", "plot_list_valid", "subject.vec", "i", "tmp", "labels", 
+    "raw.data.long", "raw.data", "my.dir", "force.valid", "trial.vec"
   )
 )
 
