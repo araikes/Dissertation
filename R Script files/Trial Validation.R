@@ -22,9 +22,7 @@
 # 6.) Trials will be plotted per person and annotated with RMSE and percentage
 # of points in view.
 # 7.) Plots will be exported for visual analysis.
-#
-# Trials will be considered valid if > 70% (17.5 out of 25 sec) of the data
-# points were within 35-45% MVC.
+
 
 #### Libraries ####
 # Import necessary libraries
