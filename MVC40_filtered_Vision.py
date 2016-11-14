@@ -20,7 +20,7 @@ includes = ['*.mat']
 excludes = ['*range*', '*cond2*', '*cond3*', '*cond5*']
 
 # # Later runs
-# with open ('Subjects_40MVC.csv') as csvfile:
+# with open('Data Files\Subjects_Vision.csv') as csvfile:
 #     subject_file = csv.reader(csvfile)
 #     excludes = []
 #     for row in subject_file:
@@ -33,7 +33,7 @@ excludes = ['*range*', '*cond2*', '*cond3*', '*cond5*']
 # excludes = ["*" + sub + "*" for sub in excludes]
 #
 # includes = ['*.mat']
-# excludes = ['*Prac*', '*Bad*', '*bad*', '*range*', '*cond2*', '*cond3*', '*cond4*']
+# excludes = ['*Prac*', '*Bad*', '*bad*', '*range*', '*cond2*', '*cond3*', '*cond5*']
 
 includes = r'|'.join([fnmatch.translate(x) for x in includes])
 excludes = r'|'.join([fnmatch.translate(x) for x in excludes])or r'$.'
@@ -115,12 +115,13 @@ detrended_data_long = pd.melt(mmse_data, id_vars=['Subject', 'Trial', ],
 detrended_data.rename(columns={'variable': 'Scale', 'value': 'MMSE'}, inplace=True)
 
 # First Run
-mmse_data_long.to_csv("MMSE_Vision.csv", header = True)
-subject_data.to_csv("Subjects_Vision.csv", header = True)
-rawdata_data.to_csv("Raw_Vision.csv", header = True)
-detrended_data_long.to_csv("Detrended_Vision.csv", header = True)
+mmse_data_long.to_csv("Data Files\MMSE_Vision.csv", header = True)
+subject_data.to_csv("Data Files\Subjects_Vision.csv", header = True)
+rawdata_data.to_csv("Data Files\Raw_Vision.csv", header = True)
+detrended_data_long.to_csv("Data Files\Detrended_Vision.csv", header = True)
 
 # Later Runs
-mmse_data_long.to_csv("MMSE_MVC40_r015.csv", mode = 'a', header = False)
-subject_data.to_csv("Subjects_40MVC.csv", mode = 'a', header = False)
-rawdata_data.to_csv("Raw_MVC40.csv", mode = 'a', header = False)
+mmse_data_long.to_csv("Data Files\MMSE_Vision.csv", mode = 'a', header = False)
+subject_data.to_csv("Data Files\Subjects_Vision.csv", mode = 'a', header = False)
+rawdata_data.to_csv("Data Files\Raw_Vision.csv", mode = 'a', header = False)
+detrended_data_long.to_csv("Data Files\Detrended_Vision.csv", mode = 'a', header = True)
