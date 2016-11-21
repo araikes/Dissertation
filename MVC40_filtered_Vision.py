@@ -1,39 +1,23 @@
-import numpy as np
+import fnmatch
+import os
+import re
+from datetime import datetime
+
+import afa
+import entropy
+import pandas as pd
 import scipy.io as sio
 import scipy.signal as signal
-import entropy
-import afa
-import pandas as pd
-import fnmatch
-import re
-import os
-from datetime import datetime
-import csv
-
+import dfa
+import spectral
 
 pd.set_option('expand_frame_repr', False)
 
 rootDir = os.getcwd()
 
-# First run
+# Set includes and excludes for files
 includes = ['*.mat']
 excludes = ['*range*', '*cond2*', '*cond3*', '*cond5*']
-
-# # Later runs
-# with open('Data Files\Subjects_Vision.csv') as csvfile:
-#     subject_file = csv.reader(csvfile)
-#     excludes = []
-#     for row in subject_file:
-#         sub = row[1]
-#         excludes.append(sub)
-#
-# excludes = set(excludes)
-# excludes = list(excludes)
-#
-# excludes = ["*" + sub + "*" for sub in excludes]
-#
-# includes = ['*.mat']
-# excludes = ['*Prac*', '*Bad*', '*bad*', '*range*', '*cond2*', '*cond3*', '*cond5*']
 
 includes = r'|'.join([fnmatch.translate(x) for x in includes])
 excludes = r'|'.join([fnmatch.translate(x) for x in excludes])or r'$.'
@@ -42,13 +26,20 @@ extract_subject = re.compile(r'S\d+').findall
 extract_trial = re.compile(r'tr\d+').findall
 extract_condition = re.compile(r'cond\d+').findall
 
+# Set empty dataframes and conditions for computing MMSE, spectral properties, and DFA
 data_mmse = []
+avg_power = []
+dfa_alpha = []
 detrended_mmse = []
 filtered_data = []
 runningtime = []
 subjects = []
+
+# Set conditions for computing MMSE, average power, and DFA
 r = 0.2
 scale = 34
+bin_ends = [4.0, 8.0, 12.0]
+dfa_lengths = [10, 122]
 
 b, a = signal.butter(9, 20/(100/2))
 
@@ -60,7 +51,6 @@ for root, dirs, files in os.walk(rootDir):
     files = [f for f in files if re.match(includes, f)]
 
     for fname in files:
-        condition = extract_condition(fname)[0]
         subject = extract_subject(fname)[0]
         trial = extract_trial(fname)[0]
 
@@ -68,23 +58,32 @@ for root, dirs, files in os.walk(rootDir):
         waveform = trial_file['subwave']
         center = trial_file['cent']
 
-        waveform_trim = np.delete(waveform, range(2900,3000))
-        waveform_trim = np.delete(waveform_trim, range(0, 400))
+        waveform_trim = spectral.np.delete(waveform, range(2900, 3000))
+        waveform_trim = spectral.np.delete(waveform_trim, range(0, 400))
         waveform_filtered = signal.filtfilt(b, a, waveform_trim)
 
         trial_data = waveform_filtered.tolist()
-        trial_data.extend([subject, condition, trial, center])
+        trial_data.extend([subject, trial, center])
         filtered_data.append(trial_data)
 
         # Compute MMSE for the raw signal
         mmse = entropy.modified_multiscale_entropy(waveform_filtered, tau=scale, r=r)
-        data_mmse.append(np.append(mmse, [subject, trial]))
+        data_mmse.append(spectral.np.append(mmse, [subject, trial]))
+
+        # Compute average power for the raw signal
+        avp = spectral.average_power(ts = waveform_filtered, Fs = 100, bin_ends = bin_ends, norm = True)
+        avp.extend([subject, trial])
+        avg_power.append(avp)
+
+        # Compute DFA alpha for the raw signal
+        alpha = dfa.dfa(time_series = waveform_filtered, bin_range = dfa_lengths, plot_dfa = False)
+        dfa_alpha.append([subject, trial, alpha])
 
         # Compute MMSE for the detrended signal.
         # Apply detrendeding using the method in AFA.
         dt, t = afa.detrending_method(waveform_filtered, seg_len=129, fit_order=2)
         dt_mmse = entropy.modified_multiscale_entropy(dt, tau=scale, r=r)
-        detrended_mmse.append(np.append(dt_mmse, [subject, trial]))
+        detrended_mmse.append(spectral.np.append(dt_mmse, [subject, trial]))
 
         print(fname, 'completed')
 
@@ -95,33 +94,27 @@ stopFull = datetime.now()
 
 mmse_data = pd.DataFrame(data_mmse)
 detrended_data = pd.DataFrame(detrended_mmse)
+avp_data = pd.DataFrame(avg_power)
+dfa_data = pd.DataFrame(dfa_alpha)
 subject_data = pd.DataFrame(subjects)
 rawdata_data = pd.DataFrame(filtered_data)
 
-
+# MMSE column names
 tmp = [i+1 for i in range(scale)]
 tmp.extend(['Subject', 'Trial'])
 mmse_data.columns = tmp
 detrended_data.columns = tmp
 
-mmse_data_long = pd.melt(mmse_data, id_vars = ['Subject', 'Trial', ],
-                         value_vars = [i for i in range(1,scale+1)])
+# Average power column names
+tmp = ['0-4 Hz', '4-8 Hz', '8-12 Hz', 'Subject', 'Trial']
+avp_data.columns = tmp
 
-mmse_data_long.rename(columns={'variable': 'Scale', 'value': 'MMSE'}, inplace = True)
-
-detrended_data_long = pd.melt(mmse_data, id_vars=['Subject', 'Trial', ],
-                         value_vars=[i for i in range(1, scale + 1)])
-
-detrended_data.rename(columns={'variable': 'Scale', 'value': 'MMSE'}, inplace=True)
+# DFA column names
+tmp = ['Subject', 'Trial', 'Alpha']
+dfa_data.columns = tmp
 
 # First Run
 mmse_data_long.to_csv("Data Files\MMSE_Vision.csv", header = True)
 subject_data.to_csv("Data Files\Subjects_Vision.csv", header = True)
 rawdata_data.to_csv("Data Files\Raw_Vision.csv", header = True)
 detrended_data_long.to_csv("Data Files\Detrended_Vision.csv", header = True)
-
-# Later Runs
-mmse_data_long.to_csv("Data Files\MMSE_Vision.csv", mode = 'a', header = False)
-subject_data.to_csv("Data Files\Subjects_Vision.csv", mode = 'a', header = False)
-rawdata_data.to_csv("Data Files\Raw_Vision.csv", mode = 'a', header = False)
-detrended_data_long.to_csv("Data Files\Detrended_Vision.csv", mode = 'a', header = True)
