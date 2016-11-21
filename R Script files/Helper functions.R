@@ -12,7 +12,7 @@
 # will be loaded here as needed.
 
 editVars <- function(x) {
-  # This function changes subject and trial variables from strings to numeric.
+  # This function drops the subject and trial identifies "S" and "tr".
   gsub("[A-z]", "", x)
 }
 
