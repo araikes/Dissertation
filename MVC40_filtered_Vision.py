@@ -66,9 +66,9 @@ for root, dirs, files in os.walk(rootDir):
         trial_data.extend([subject, trial, center])
         filtered_data.append(trial_data)
 
-        # # Compute MMSE for the raw signal
-        # mmse = entropy.modified_multiscale_entropy(waveform_filtered, tau=scale, r=r)
-        # data_mmse.append(spectral.np.append(mmse, [subject, trial]))
+        # Compute MMSE for the raw signal
+        mmse = entropy.modified_multiscale_entropy(waveform_filtered, tau=scale, r=r)
+        data_mmse.append(spectral.np.append(mmse, [subject, trial]))
 
         # Compute average power for the raw signal
         avp = spectral.average_power(ts = waveform_filtered, Fs = 100, bin_ends = bin_ends, norm = True)
@@ -79,15 +79,15 @@ for root, dirs, files in os.walk(rootDir):
         alpha = dfa.dfa(time_series = waveform_filtered, bin_range = dfa_lengths, plot_dfa = False)
         dfa_alpha.append([subject, trial, alpha])
 
-        # # Compute MMSE for the detrended signal.
-        # # Apply detrendeding using the method in AFA.
-        # dt, t = afa.detrending_method(waveform_filtered, seg_len=129, fit_order=2)
-        # dt_mmse = entropy.modified_multiscale_entropy(dt, tau=scale, r=r)
-        # detrended_mmse.append(spectral.np.append(dt_mmse, [subject, trial]))
+        # Compute MMSE for the detrended signal.
+        # Apply detrendeding using the method in AFA.
+        dt, t = afa.detrending_method(waveform_filtered, seg_len=129, fit_order=2)
+        dt_mmse = entropy.modified_multiscale_entropy(dt, tau=scale, r=r)
+        detrended_mmse.append(spectral.np.append(dt_mmse, [subject, trial]))
 
         print(fname, 'completed')
 
-        # subjects.append(subject)
+        subjects.append(subject)
 
 print("done")
 stopFull = datetime.now()
@@ -122,7 +122,7 @@ tmp.extend(['subject', 'trial', 'center'])
 rawdata_data.columns = tmp
 
 # First Run
-mmse_data_long.to_csv("Data Files\MMSE.csv", header = True)
+mmse_data_long.to_csv("Original Data Files\MMSE.csv", header = True)
 subject_data.to_csv("Original Data Files\Subjects.csv", header = True)
 rawdata_data.to_csv("Original Data Files\Raw Data.csv", header = True)
 detrended_data_long.to_csv("Data Files\Detrended MMSE.csv", header = True)
