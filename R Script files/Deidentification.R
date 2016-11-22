@@ -71,7 +71,7 @@ for (i in 2:length(sheet.names)){
             col.names = TRUE)
 }
 
-write.csv(participant.info, "./Data Files/Paricipant Info.csv",
+write.csv(participant.info, "./Data Files/Participant Info.csv",
           sep = ",",
           row.names = FALSE,
           col.names = TRUE)

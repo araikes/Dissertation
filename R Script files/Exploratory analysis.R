@@ -20,9 +20,8 @@
 require(tidyverse)
 require(ggplot2)
 
-#### Read in MMSE data ####
-mmse.data <- read.csv("./Data Files/MMSE_Vision.csv", header = TRUE, sep = ",") %>%
-  select(-X)
-
-mmse.detrended.data <- read.csv("./Data Files/Detrended_Vision.csv", header = TRUE, sep = ",") %>%
-  select(-X)
+#### Read in outcomes data ####
+mmse.data <- read.csv("./Data Files/MMSE.csv", header = TRUE, sep = ",")
+mmse.detrended.data <- read.csv("./Data Files/Detrended MMSE.csv", header = TRUE, sep = ",")
+dfa.data <- read.csv("./Data Files/DFA.csv", header = TRUE, sep = ",")
+avp.data <- read.csv("./Data Files/AvP.csv", header = TRUE, sep = ",")
