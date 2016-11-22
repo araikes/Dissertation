@@ -29,5 +29,19 @@ prepSubs <- function(x) {
     mutate_if(is.factor, as.numeric)
 }
   
+deidentify <- function(x, ids){
+  # This function will replace original participant IDs with randomly generated
+  # ones for deidentification purposes
   
+  # Load dplyr if not already loaded
+  require(dplyr)
+  
+  # Replace ids
+  x <- x %>%
+    left_join(ids) %>%
+    select(-subject) %>%
+    select(id, block, everything())
+  
+  return(x)
+}
   
