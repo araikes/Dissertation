@@ -94,9 +94,11 @@ force.valid <- raw.data.long %>%
 # frames, etc.
 trial.summary <- raw.data.long %>%
   group_by(id, trial, center.N) %>%
-  summarise(rmse = sqrt(mean((newtons-center.N)^2))) %>%
+  summarise(rmse.N = sqrt(mean((newtons-center.N)^2)),
+            rmse.V = sqrt(mean((yvals-center)^2))) %>%
   ungroup() %>%
-  mutate(valid.points = force.valid$valid.newtons)
+  mutate(valid.newtons = force.valid$valid.newtons,
+         valid.volts = force.valid$valid.volts)
 
 #### Create validation plots ####
 # These plots will plot the raw trace from 4sec-29sec. The first 4 and last 1
@@ -116,10 +118,11 @@ plot_list = list()
 # Make plots
 for (i in 1:length(id.vec)) {
   tmp <- filter(raw.data.long, id == id.vec[i]) %>%
+    ungroup() %>%
     select(-id)
   
   labels <- filter(trial.summary, id == id.vec[i]) %>%
-    select(trial, rmse, valid.points)
+    select(trial, rmse.V, valid.volts)
   
   p <- ggplot(data = tmp, aes(x = xvals, y = newtons)) +
     facet_grid(trial ~ ., scales = "free") +
@@ -129,11 +132,11 @@ for (i in 1:length(id.vec)) {
     geom_hline(aes(yintercept = screen.lower.N), col = "blue") +
     geom_hline(aes(yintercept = screen.upper.N), col = "blue") +
     geom_text(aes(x = 500, y = Inf, hjust = 1, vjust = 1.1,
-                  label = paste0("RMSE: ", round(rmse, 3)),
+                  label = paste0("RMSE: ", round(rmse.V, 3)),
                   group = NULL),
               data = labels) +
     geom_text(aes(x = 2000, y = Inf, hjust = 1, vjust = 1.1,
-                  label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
+                  label = paste0("Points in view: ", round(valid.volts*100, 2), "%"),
                   group = NULL),
               data = labels) +
     ggtitle(paste("Participant: ", id.vec[i])) +
@@ -167,11 +170,12 @@ trial.vec <- vector()
 # Make plots
 for (i in 1:length(id.vec)) {
   tmp <- filter(raw.data.long, id == id.vec[i]) %>%
+    ungroup() %>%
     select(-id)
   
   labels <- filter(trial.summary, id == id.vec[i]) %>%
-    select(trial, rmse, valid.points) %>%
-    filter(valid.points >= 0.1)
+    select(trial, rmse.V, valid.volts) %>%
+    filter(valid.volts >= 0.1)
   
   if (nrow(labels) == 0) {
     next
@@ -188,11 +192,11 @@ for (i in 1:length(id.vec)) {
     geom_hline(aes(yintercept = screen.lower.N), col = "blue") +
     geom_hline(aes(yintercept = screen.upper.N), col = "blue") +
     geom_text(aes(x = 500, y = Inf, hjust = 1, vjust = 1.1,
-                  label = paste0("RMSE: ", round(rmse, 3)),
+                  label = paste0("RMSE: ", round(rmse.V, 3)),
                   group = NULL),
               data = labels) +
     geom_text(aes(x = 2000, y = Inf, hjust = 1, vjust = 1.1,
-                  label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
+                  label = paste0("Points in view: ", round(valid.volts*100, 2), "%"),
                   group = NULL),
               data = labels) +
     ggtitle(paste("Participant: ", id.vec[i])) +
