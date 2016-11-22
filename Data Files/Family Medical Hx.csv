@@ -1,0 +1,62 @@
+"id","block","Relationship","Condition","Age.diagnosed"
+438,"Second",NA,NA,NA
+821,"First","Mom","Migraine",NA
+239,"Second",NA,NA,NA
+175,"First",NA,NA,NA
+962,"Second","Grandmother","Migraine",16
+831,"First",NA,NA,NA
+161,"Second",NA,NA,NA
+633,"First",NA,NA,NA
+164,"Second",NA,NA,NA
+996,"First",NA,NA,NA
+744,"Second",NA,NA,NA
+641,"First",NA,NA,NA
+581,"Second","Grandmother","AD",73
+654,"First","Grandmother","AD",67
+654,"First","Great Grandmother","AD",65
+637,"First","Grandpa","MS",50
+597,"First","Grandmother","Other dementia",82
+652,"First","Grandparent","Alzheimers",50
+493,"Second","Grandmother","Alzheimers",88
+355,"First","Grandfather","Alzheimers",65
+204,"Second","Sister","Undiagnosed hearing loss",12
+204,"Second","Aunt","Undiagnosed hearing loss",42
+204,"Second","Cousin","Brain Tumor",4
+623,"First","Grandfather","Alzheimers",71
+623,"First","Grandfather","Dementia",80
+362,"First","Grandmother","Alzheimers",75
+176,"Second","Grandpa","Alzheimers",80
+692,"First","Grandma","Alzheimers",65
+509,"First","Grandparent","Brain Tumor",64
+867,"First","Mother","MS",40
+867,"First","Grandmother","MS",70
+84,"Second","Aunt","Parkinsons",58
+84,"Second","Grandpa","Alzheimers",62
+84,"Second","Grandma","Alzheimers",63
+84,"Second","Mother","Alzheimers",48
+557,"Second","Mother","Migraine",NA
+235,"Second","Grandfather","Parkinon's",80
+726,"First","Grandpa","Alzheimers",71
+586,"First","Grandpa","ALS",40
+862,"First","Cousin","Epilepsy",28
+862,"First","Grandma","Parkinsons",65
+862,"First","Brother","Migraine",25
+732,"Second","Grandmother","LBD",80
+108,"First","Grandmother","Alzheimers",63
+809,"Second","Grandmother","Alzheimers",65
+988,"First","Grandpa","Parkinsons",50
+23,"First","Grandpa","Cancer",60
+23,"First","Aunt","CHD",40
+545,"Second","Grandmother","Alzheimers",80
+256,"Second","Grandmother","Other dementia",82
+900,"First","Great Grandmother","Parkinsons",62
+70,"First","Grandpa","Alzheimers",80
+98,"Second","Uncle","Brain Tumor",54
+467,"First","Mother","MS",45
+833,"Second","Grandmother","MS",35
+833,"Second","Aunt","MS",21
+519,"First","Grandfather","Other dementia",60
+563,"Second","Grandma","MS",30
+706,"Second","Grandma","Alzheimers",64
+731,"First",NA,NA,NA
+677,"First",NA,NA,NA
