@@ -2,11 +2,11 @@
 # Author: Adam Raikes
 # Initial Date: 09/21/2016
 # Local Depends: none
-# Local Files: ./Data Files/Raw_Vision.csv
+# Local Files: ./Data Files/Raw Data.csv
 #
 # Description: Trial Validation.R imports the raw data file for the
 # vision-condition at a maximum voluntary contraction (MVC) value of 40%. This
-# raw data file contains 2500 data points per person per trial, a subject
+# raw data file contains 2500 data points per person per trial, a id
 # identifier, a trial identifier, a condition identifier (deprecated), and a 
 # center value.
 #
@@ -29,55 +29,27 @@
 # For purposes here, necessary libraries include tidyverse for dplyr and tidyr functions
 # and ggplot2 for plotting.
 
-library(tidyverse)
-library(ggplot2)
+require(tidyverse)
 
 #### Load data ####
 # Data is located in ./Data Files as a CSV file
-raw.data <- read.csv("./Data Files/Raw_Vision.csv")
+raw.data <- read.csv("./Data Files/Raw Data.csv")
 
 # View data
 head(raw.data)
 ncol(raw.data)
 
-# Fix column names
-colnames(raw.data)[2502:2505] <- c("subject", "condition", "trial", "center")
-head(raw.data)
-
 # Reshape to long format
 raw.data.long <- raw.data %>%
-  select(-X) %>%
-  group_by(subject, condition, trial) %>%
-  gather(xvals, yvals, -subject:-center)
+  select(-x) %>%
+  select(id, block, trial, center, everything()) %>%
+  group_by(id, block, trial, center) %>%
+  gather(xvals, yvals, -id:-center)
 
-# Remove condition column
-# This was necessary in the pilot stage but is no longer required.
-raw.data.long <- raw.data.long %>%
-  ungroup() %>%
-  select(-condition)
-
-#### Edit subjects, trials, and xvals ####
-# As of right now, the subject, trial, and xval columns are strings. These
-# unusable in their current form. These values will be transformed from string
-# to numeric using regex functions.
-raw.data.long$subject <- gsub("S","", raw.data.long$subject)
-raw.data.long$trial <- gsub("tr", "", raw.data.long$trial)
-raw.data.long$xvals <- gsub("X", "", raw.data.long$xvals)
-
-raw.data.long$subject <- as.numeric(raw.data.long$subject)
-raw.data.long$trial <- as.numeric(raw.data.long$trial)
-raw.data.long$xvals <- as.numeric(raw.data.long$xvals)
-
+#### Convert xvals ####
+# Need to strip the prepended "x" from the values
+raw.data.long$xvals <- as.numeric(gsub("[A-z]", "", raw.data.long$xvals))
 head(raw.data.long)
-
-#### Reorder data frame ####
-# Right now, the data frame is organized by subject, trial, point. This means
-# that all of the 0 time point values come first for all participants, then 1,
-# etc. This is impractical and unviewable. Dataframe will be resorted to haveall
-# of the points for a single participant's trial list in succession.
-
-raw.data.long <- group_by(raw.data.long, subject, trial) %>%
-  arrange(xvals)
 
 #### Voltage to Newtons ####
 # The force transducer reports the force in voltage. A calibration set was
@@ -111,17 +83,17 @@ raw.data.long <- mutate(
                            newtons <= screen.upper.N, 1 , 0))
 
 force.valid <- raw.data.long %>%
-  group_by(subject, trial, center, center.N) %>%
+  group_by(id, trial, center, center.N) %>%
   summarise(count = n(),
             valid.volts = sum(valid.point.volts)/count,
             valid.newtons = sum(valid.point.newtons)/count)
 
 #### Compute RMSE ####
-# Create a summary data frame with subject, trial, center.N, and RMSE. This
+# Create a summary data frame with id, trial, center.N, and RMSE. This
 # frame will ultimately be merged with demographic frames, MMSE frames, DFA
 # frames, etc.
 trial.summary <- raw.data.long %>%
-  group_by(subject, trial, center.N) %>%
+  group_by(id, trial, center.N) %>%
   summarise(rmse = sqrt(mean((newtons-center.N)^2))) %>%
   ungroup() %>%
   mutate(valid.points = force.valid$valid.newtons)
@@ -132,21 +104,21 @@ trial.summary <- raw.data.long %>%
 # also annotate onto them the RMSE and the number of points inside the window
 # for full evaluation.
 
-# Get vector of unique subject IDs to loop over
-subject.vec <- ungroup(trial.summary) %>% 
-  distinct(subject) %>% 
-  select(subject) %>%
-  collect %>% .[["subject"]]
+# Get vector of unique id IDs to loop over
+id.vec <- ungroup(trial.summary) %>% 
+  distinct(id) %>% 
+  select(id) %>%
+  collect %>% .[["id"]]
 
 # Create list for plot capture
 plot_list = list()
 
 # Make plots
-for (i in 1:length(subject.vec)) {
-  tmp <- filter(raw.data.long, subject == subject.vec[i]) %>%
-    select(-subject)
+for (i in 1:length(id.vec)) {
+  tmp <- filter(raw.data.long, id == id.vec[i]) %>%
+    select(-id)
   
-  labels <- filter(trial.summary, subject == subject.vec[i]) %>%
+  labels <- filter(trial.summary, id == id.vec[i]) %>%
     select(trial, rmse, valid.points)
   
   p <- ggplot(data = tmp, aes(x = xvals, y = newtons)) +
@@ -164,7 +136,7 @@ for (i in 1:length(subject.vec)) {
                   label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
                   group = NULL),
               data = labels) +
-    ggtitle(paste("Participant: ", subject.vec[i])) +
+    ggtitle(paste("Participant: ", id.vec[i])) +
     theme_bw()
   
   plot_list[[i]] <- p
@@ -176,7 +148,7 @@ my.dir <- getwd()
 setwd("Plots")
 
 pdf("Trial Validation.pdf")
-for (i in 1:length(subject.vec)) {
+for (i in 1:length(id.vec)) {
   print(plot_list[[i]])
 }
 dev.off()
@@ -193,11 +165,11 @@ plot_list_valid = list()
 trial.vec <- vector()
 
 # Make plots
-for (i in 1:length(subject.vec)) {
-  tmp <- filter(raw.data.long, subject == subject.vec[i]) %>%
-    select(-subject)
+for (i in 1:length(id.vec)) {
+  tmp <- filter(raw.data.long, id == id.vec[i]) %>%
+    select(-id)
   
-  labels <- filter(trial.summary, subject == subject.vec[i]) %>%
+  labels <- filter(trial.summary, id == id.vec[i]) %>%
     select(trial, rmse, valid.points) %>%
     filter(valid.points >= 0.1)
   
@@ -223,7 +195,7 @@ for (i in 1:length(subject.vec)) {
                   label = paste0("Points in view: ", round(valid.points*100, 2), "%"),
                   group = NULL),
               data = labels) +
-    ggtitle(paste("Participant: ", subject.vec[i])) +
+    ggtitle(paste("Participant: ", id.vec[i])) +
     theme_bw()
   
   plot_list_valid[[i]] <- p
@@ -246,7 +218,7 @@ setwd(my.dir)
 # Remove objects for which persistence is not required.
 rm(
   list = c(
-    "p", "plot_list", "plot_list_valid", "subject.vec", "i", "tmp", "labels", 
+    "p", "plot_list", "plot_list_valid", "id.vec", "i", "tmp", "labels", 
     "raw.data.long", "raw.data", "my.dir", "force.valid", "trial.vec"
   )
 )
