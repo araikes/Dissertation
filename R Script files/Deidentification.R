@@ -84,7 +84,7 @@ outcome.files <- list.files(path = "./Original Data Files",
 for (i in 1:length(outcome.files)){
   tmp <- read.csv(paste("./Original Data Files/", outcome.files[i], sep = ""),
                   header = TRUE) %>%
-    select(-x)
+    select(-X)
   colnames(tmp) <- tolower(colnames(tmp))
   
   tmp <- prepSubs(tmp)
