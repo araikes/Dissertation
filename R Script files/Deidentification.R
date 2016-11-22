@@ -99,7 +99,7 @@ for (i in 1:length(outcome.files)){
 subject.ids <- arrange(subject.ids,
                        subject)
 write.csv(subject.ids,
-          "./Original Data Files/Subject IDs.csv",
+          "./Original Data Files/Data backup/Subject IDs.csv",
           row.names = FALSE)
 
 #### Remove all objects ####
