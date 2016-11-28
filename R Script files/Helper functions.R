@@ -44,4 +44,32 @@ deidentify <- function(x, ids){
   
   return(x)
 }
+
+my_boxplot <- function(group, y, data){
+  require(ggplot2)
+  ggplot(data = data, aes_string(group, y)) +
+    geom_boxplot(notch = TRUE) +
+    geom_jitter(width = 0.2) +
+    xlab(group) +
+    ylab(y) +
+    theme_bw()
+}
+  
+my_scatterplot <- function(x, y, data){
+  require(ggplot2)
+  ggplot(data = data, aes_string(x, y)) +
+    geom_point() +
+    geom_jitter(width = 0.2) +
+    xlab(x) +
+    ylab(y) +
+    theme_bw()
+}
+
+my_qqplot <- function(y, data){
+  require(ggplot2)
+  
+  ggplot(data, aes_string(sample = y))+
+    stat_qq() +
+    theme_bw()
+}
   
