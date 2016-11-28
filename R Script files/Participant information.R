@@ -41,3 +41,7 @@ participants <- participant.info %>%
          diagnosed.number, suspected.number, LOC, seizure, amnesia, sx.current) %>%
   mutate(concussion.number = diagnosed.number + suspected.number,
          prior.concussion = ifelse(concussion.number != 0, "Yes", "No"))
+
+#### Remove unnecessary dataframes ####
+rm(list = c("participant.info", "diagnosed.concussions", 
+            "suspected.concussions", "concussion.symptoms", "participant.order"))
