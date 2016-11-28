@@ -1,0 +1,91 @@
+---
+title: "Exploratory Analysis"
+author: "Adam Raikes"
+date: "November 28, 2016"
+output: pdf_document
+---
+```{r setGlobal, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r comments, echo = FALSE}
+#### File Description ####
+# Author: Adam Raikes
+# Initial Date: 11/14/2016
+# Local Depends: Trial Validation.R
+# Local Files: ./Data Files/Raw_Vision.csv, ./Data Files/MMSE_Vision.csv,
+# ./Data Files/Detrended_Vision.csv
+#
+# Description: This is an exploratory analysis of the nonlinear metrics for the
+# visual-motor tracking task. At present, only MMSE is computed. This file
+# depends on Trial Validation.R to import the RMSE for the trials.
+#
+# This exploratory analysis will focus primarily on graphical representations of
+# variables to assess the overall coherence of the dataset. Primary plots will be
+# boxplots.
+```
+
+
+```{r loadLibraries}
+#### Load libraries ####
+# This will be accomplished by "require" to avoid unnecessary loading.
+require(tidyverse)
+require(ggplot2)
+require(furniture)
+require(cowplot)
+```
+
+```{r sourceFiles}
+# Some of the functions used as well as participant and data cleaning require
+# loading custom functions
+
+#### Load helper functions ####
+source("Helper functions.R")
+
+#### Get minimal participant information ####
+source("Participant information.R")
+```
+
+```{r descriptiveStatistics}
+part.desc <- select(participants, height, weight, age, hand, gamer, 
+                    diagnosed.number, suspected.number, concussion.number,
+                    prior.concussion)
+
+table1(part.desc, 
+       height, weight, age, hand, gamer, diagnosed.number, suspected.number, concussion.number,
+       splitby = ~prior.concussion,
+       test = TRUE,
+       output_type = "latex")
+```
+
+```{r readData}
+#### Read in outcomes data ####
+#mmse.data <- read.csv("./Data Files/MMSE.csv", header = TRUE, sep = ",")
+#mmse.detrended.data <- read.csv("./Data Files/Detrended MMSE.csv", header = TRUE, sep = ",")
+dfa.data <- read.csv("./Data Files/DFA.csv", header = TRUE, sep = ",")
+avp.data <- read.csv("./Data Files/AvP.csv", header = TRUE, sep = ",")
+trial.summary <- read.csv("./Data Files/Trial Summary.csv", header = TRUE, sep = ",")
+```
+
+```{r createJointFrame}
+fullFrame <- left_join(dfa.data, avp.data) %>%
+  left_join(trial.summary) %>%
+  left_join(participants)
+```
+
+```{r boxplots, results = "asis"}
+outcomes <- c("alpha", "x0.4.hz", "x4.8.hz", "x8.12.hz", "rmse.V")
+
+for (i in 1:length(outcomes)){
+  a <- my_boxplot(group = "block", y = outcomes[i], data = fullFrame)
+  b <- my_boxplot(group = "prior.concussion", y = outcomes[i], data = fullFrame)
+  c <- my_boxplot(group = "gender", y = outcomes[i], data = fullFrame)
+  d <- my_boxplot(group = "gamer", y = outcomes[i], data = fullFrame)
+  
+  plot_grid(a,b,c,d
+            labels = c("A", "B", "C", "D"),
+            ncol = 2)
+```
+
+
+
