@@ -41,6 +41,7 @@ ncol(raw.data)
 
 # Reshape to long format
 raw.data.long <- raw.data %>%
+  select(-x) %>%
   select(id, block, trial, center, everything()) %>%
   group_by(id, block, trial, center) %>%
   gather(xvals, yvals, -id:-center)
