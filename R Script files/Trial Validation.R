@@ -227,3 +227,8 @@ rm(
   )
 )
 
+#### Write trial summary to file ####
+# This is necessary for "Exploratory Analysis.Rmd"
+
+write.csv(trial.summary, "./Data Files/Trial Summary.csv")
+
