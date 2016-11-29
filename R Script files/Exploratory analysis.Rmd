@@ -78,28 +78,46 @@ table1(part.desc,
 
 ```{r readData}
 #### Read in outcomes data ####
-#mmse.data <- read.csv("./Data Files/MMSE.csv", header = TRUE, sep = ",")
-#mmse.detrended.data <- read.csv("./Data Files/Detrended MMSE.csv", header = TRUE, sep = ",")
+mmse.data <- read.csv(paste(my_dir, "./Data Files/MMSE.csv", sep = ""),
+                      header = TRUE, sep = ",")
+mmse.detrended.data <- read.csv(paste(my_dir, "./Data Files/Detrended MMSE.csv", sep = ""),
+                                header = TRUE, sep = ",")
 dfa.data <- read.csv(paste(my_dir, "/Data Files/DFA.csv", sep = ""),
                      header = TRUE, sep = ",")
 avp.data <- read.csv(paste(my_dir, "./Data Files/AvP.csv", sep = ""),
                      header = TRUE, sep = ",")
 trial.summary <- read.csv(paste(my_dir, "./Data Files/Trial Summary.csv", sep = ""),
                           header = TRUE, sep = ",")
+
+# Create dataframe with only complexity for MMSE and detrended MMSE
+raw.complexity <- group_by(mmse.data, id) %>%
+  gather(scale, value, -id, -trial, -block) %>%
+  group_by(id, block, trial) %>%
+  summarise(complexity = sum(value))
+
+detrended.complexity <- group_by(mmse.detrended.data, id) %>%
+  gather(scale, value, -id, -trial, -block) %>%
+  group_by(id, block, trial) %>%
+  summarise(detrended.complexity = sum(value))
 ```
 
 
 ```{r createJointFrame}
 full.frame <- left_join(dfa.data, avp.data) %>%
   left_join(trial.summary) %>%
+  left_join(raw.complexity) %>%
+  left_join(detrended.complexity) %>%
   left_join(participants)
 ```
 
 ```{r boxplots, results = "asis", fig.height = 10, fig.width = 16}
-outcomes <- c("alpha", "x0.4.hz", "x4.8.hz", "x8.12.hz", "rmse.V")
-titles <- c("DFA Alpha", "Average 0-4 Hz Power",
+outcomes <- c("rmse.V", "complexity",
+              "detrended.complexity", "avp04", "avp48", 
+              "avp812", "alpha")
+titles <- c("RMSE", "Complexity", "Detrended Complexity",
+            "Average 0-4 Hz Power",
             "Average 4-8 Hz Power", "Average 8-12 Hz Power",
-            "RMSE")
+            "DFA Alpha")
 
 for (i in 1:length(outcomes)){
   a <- my_boxplot(group = "block", y = outcomes[i], data = full.frame)
@@ -151,12 +169,19 @@ for (i in 1:length(outcomes)){
 
 ```{r addOutlierFlag}
 # Outcomes-only frame with outcome flags
+raw.complexity <- mutate(raw.complexity, outcome = "MMSE") %>%
+  rename(value = complexity)
+
+detrended.complexity <- mutate(detrended.complexity, outcome = "Detrended MMSE") %>%
+  rename(value = detrended.complexity)
+
 dfa.data.long <- mutate(dfa.data, outcome = "DFA") %>%
   rename(value = alpha)
 
 avp.data.long <- gather(avp.data, outcome, value, -id, -block, -trial)
 
-individual.frame <- bind_rows(dfa.data.long, avp.data.long)
+individual.frame <- bind_rows(raw.complexity, detrended.complexity, 
+                              dfa.data.long, avp.data.long)
 
 individual.frame <- group_by(individual.frame, id, outcome) %>%
   mutate(outlier = ifelse(is_outlier(value), trial, as.numeric(NA)))
