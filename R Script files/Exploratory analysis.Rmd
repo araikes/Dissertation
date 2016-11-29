@@ -42,6 +42,7 @@ require(cowplot)
 # Some of the functions used as well as participant and data cleaning require
 # loading custom functions
 
+# Comment out the setwd command when rendering from with Dissertation analyses.R.
 setwd("../")
 my_dir <- getwd()
 print(my_dir)
@@ -54,14 +55,16 @@ source("./R Script files/Participant information.R")
 ```
 
 ```{r descriptiveStatistics}
-part.desc <- select(participants, height, weight, age, hand, gamer, 
+part.desc <- select(participants, height, weight, age, gender, hand, gamer, 
                     diagnosed.number, suspected.number, concussion.number,
                     prior.concussion)
 
 table1(part.desc, 
-       height, weight, age, hand, gamer, diagnosed.number, suspected.number, concussion.number,
+       height, weight, age, gender, hand, gamer, 
+        diagnosed.number, suspected.number, concussion.number,
        splitby = ~prior.concussion,
-       test = TRUE)
+       test = TRUE,
+       output_type = "markdown")
 ```
 
 \newpage

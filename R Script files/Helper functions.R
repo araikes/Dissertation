@@ -12,7 +12,6 @@
 # will be loaded here as needed.
 require(extrafont)
 
-
 editVars <- function(x) {
   # This function drops the subject and trial identifies "S" and "tr".
   gsub("[A-z]", "", x)
