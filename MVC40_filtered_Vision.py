@@ -106,7 +106,7 @@ mmse_data.columns = tmp
 detrended_data.columns = tmp
 
 # Average power column names
-tmp = ['0-4 Hz', '4-8 Hz', '8-12 Hz', 'subject', 'trial']
+tmp = ['avp04', 'avp48', 'avp812', 'subject', 'trial']
 avp_data.columns = tmp
 
 # DFA column names
@@ -122,9 +122,9 @@ tmp.extend(['subject', 'trial', 'center'])
 rawdata_data.columns = tmp
 
 # First Run
-mmse_data_long.to_csv("Original Data Files\MMSE.csv", header = True)
+mmse_data.to_csv("Original Data Files\MMSE.csv", header = True)
 subject_data.to_csv("Original Data Files\Subjects.csv", header = True)
 rawdata_data.to_csv("Original Data Files\Raw Data.csv", header = True)
-detrended_data_long.to_csv("Data Files\Detrended MMSE.csv", header = True)
+detrended_data.to_csv("Original Data Files\Detrended MMSE.csv", header = True)
 dfa_data.to_csv("Original Data Files\DFA.csv", header = True)
 avp_data.to_csv("Original Data Files\AvP.csv", header = True)
