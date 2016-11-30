@@ -99,12 +99,12 @@ trial.summary <- raw.data.long %>%
   mutate(valid.newtons = force.valid$valid.newtons,
          valid.volts = force.valid$valid.volts)
 
-#### Create validation plots ####
-# These plots will plot the raw trace from 4sec-29sec. The first 4 and last 1
-# sec were dropped in the original data processing pipeline. These plots will
-# also annotate onto them the RMSE and the number of points inside the window
-# for full evaluation.
-
+# #### Create validation plots ####
+# # These plots will plot the raw trace from 4sec-29sec. The first 4 and last 1
+# # sec were dropped in the original data processing pipeline. These plots will
+# # also annotate onto them the RMSE and the number of points inside the window
+# # for full evaluation.
+# 
 # Get vector of unique id IDs to loop over
 id.vec <- ungroup(trial.summary) %>% 
   distinct(id) %>% 
@@ -174,7 +174,7 @@ for (i in 1:length(id.vec)) {
   
   labels <- filter(trial.summary, id == id.vec[i]) %>%
     select(trial, rmse.V, valid.volts) %>%
-    filter(valid.volts >= 0.1)
+    filter(valid.volts > 0.2)
   
   if (nrow(labels) == 0) {
     next

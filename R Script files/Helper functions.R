@@ -89,4 +89,38 @@ boxplot_outliers <- function(y, outlier, outcome, data){
     ylab("") +
     theme_bw()
 }
+
+participant_inclusion <- function(x){
+  # This function is not meant for broad purpose use. It is specific to this project
+  require(dplyr)
+  
+  select(x, id, trial) %>%
+    group_by(id) %>%
+    summarise(count = n()) %>%
+    filter(count > 5) %>%
+    select(id)
+}
+
+trial_inclusion <- function(allTrials, badTrials){
+  # This function is not meant for broad purpose use. It is specific to this project
+  require(dplyr)
+  
+  drop.low <- filter(allTrials,
+                     valid.volts > 0.2)
+  
+  retained.ids <- participant_inclusion(drop.low)
+  
+  retained.trials <- semi_join(drop.low, retained.ids) %>%
+    anti_join(badTrials) %>%
+    select(id, trial)
+  
+  retained.ids <- participant_inclusion(retained.trials)
+  
+  retained.trials <- semi_join(retained.trials, retained.ids)
+  
+  return(retained.trials)
+}
+    
+    
+  
   
