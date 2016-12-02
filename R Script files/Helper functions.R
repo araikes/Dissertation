@@ -120,6 +120,10 @@ trial_inclusion <- function(allTrials, badTrials){
   
   return(retained.trials)
 }
+
+cv <- function(x){
+  sd(x)/mean(x)
+}
     
     
   

@@ -32,13 +32,16 @@ participant.order <- read.csv("./Data Files/Order.csv",
 participants <- participant.info %>%
   select(id, block, gender, hand, height, weight, gamer, age) %>%
   left_join(diagnosed.concussions) %>%
-  select(-age.first:-Notes) %>%
+  select(-age.first, -physician:-Notes) %>%
+  rename(diagnosed.recent = age.recent) %>%
   left_join(suspected.concussions) %>%
-  select(-age.first:-Notes) %>%
+  select(-age.first, -total.reported, -Notes) %>%
+  rename(suspected.recent = age.recent) %>%
   left_join(concussion.symptoms) %>%
   left_join(participant.order) %>%
   select(id, block, order, gender, hand, height, weight, gamer, age, 
-         diagnosed.number, suspected.number, LOC, seizure, amnesia, sx.current) %>%
+         diagnosed.number, suspected.number, LOC, seizure, amnesia, 
+         sx.current, diagnosed.recent, suspected.recent) %>%
   mutate(concussion.number = diagnosed.number + suspected.number,
          prior.concussion = ifelse(concussion.number != 0, "Yes", "No"))
 
