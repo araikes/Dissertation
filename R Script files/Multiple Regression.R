@@ -149,7 +149,7 @@ average.outcomes <- trial.outcomes %>%
 #### Descriptive statistics ####
 table1(participants,
        height, weight, age, gender, hand, gamer, LOC, amnesia,
-       diagnosed.number, suspected.number, concussion.number,
+       as.factor(diagnosed.number), as.factor(suspected.number), as.factor(concussion.number),
        splitby = ~prior.concussion,
        test = TRUE,
        output_type = "markdown")  
@@ -189,7 +189,7 @@ for (i in 1:length(outcomes)){
   print(scat)
 }
 
-#-----------------------------------------------------------------####
+#-------------Models as defined in my dissertation proposal--------------------####
 #### Fit linear models for average values ####
 # These will fit the linear models specifically defined in the dissertation proposal.
 require(MASS)
@@ -203,7 +203,7 @@ average.outcomes <- rename(average.outcomes, total.concussions = concussion.numb
 mmse.lm <- lm(raw.complexity_mean ~ (diagnosed.number + suspected.number + 
                                        LOC + amnesia)^2,
               data = average.outcomes)
-mmse.step <- stepAIC(mmse.lm, trace = FALSE) 
+mmse.step <- MASS::stepAIC(mmse.lm, trace = FALSE) 
 
 anova(mmse.step, mmse.lm)
 
@@ -215,19 +215,36 @@ summary(mmse.step)
 dt.mmse.lm <- lm(detrended.complexity_mean ~ (diagnosed.number + suspected.number + 
                                                 LOC + amnesia)^2,
               data = average.outcomes)
-dt.mmse.step <- stepAIC(dt.mmse.lm, trace = FALSE) 
+dt.mmse.step <- MASS::stepAIC(dt.mmse.lm, trace = FALSE) 
 
 anova(dt.mmse.step, dt.mmse.lm)
 
 summary(gvlma(dt.mmse.step))
 plot(gvlma(dt.mmse.step))
+dt.mmse.step.del <- deletion.gvlma(gvlma(dt.mmse.step))
+display.delstats(dt.mmse.step.del$DeltaStat4, dt.mmse.step.del$Stat4pvalue)
+
+# Dropping outlier
+dt.mmse.lm <- lm(detrended.complexity_mean ~ (diagnosed.number + suspected.number + 
+                                                LOC + amnesia)^2,
+                 data = average.outcomes[average.outcomes$id != 918,])
+dt.mmse.step <- MASS::stepAIC(dt.mmse.lm, trace = FALSE) 
+
+anova(dt.mmse.step, dt.mmse.lm)
+
+summary(gvlma(dt.mmse.step))
+plot(gvlma(dt.mmse.step))
+dt.mmse.step.del <- deletion.gvlma(gvlma(dt.mmse.step))
+display.delstats(dt.mmse.step.del$DeltaStat4, dt.mmse.step.del$Stat4pvalue)
+
+
 summary(dt.mmse.step)
 
 ### Average RMSE ####
 rmse.lm <- lm(rmse.V_mean ~ (diagnosed.number + suspected.number + 
                                     LOC + amnesia)^2,
               data = average.outcomes)
-rmse.step <- stepAIC(rmse.lm, trace = FALSE) 
+rmse.step <- MASS::stepAIC(rmse.lm, trace = FALSE) 
 
 anova(rmse.step, rmse.lm)
 
@@ -238,7 +255,7 @@ plot(gvlma(rmse.step))
 rmse.lm <- lm(log(rmse.V_mean) ~ (diagnosed.number + suspected.number + 
                                LOC + amnesia)^2,
               data = average.outcomes)
-rmse.step <- stepAIC(rmse.lm, trace = FALSE) 
+rmse.step <- MASS::stepAIC(rmse.lm, trace = FALSE) 
 
 anova(rmse.step, rmse.lm)
 
@@ -252,7 +269,7 @@ summary(rmse.step)
 avp04.lm <- lm(avp04_mean ~ (diagnosed.number + suspected.number + 
                                LOC + amnesia)^2,
               data = average.outcomes)
-avp04.step <- stepAIC(avp04.lm, trace = FALSE) 
+avp04.step <- MASS::stepAIC(avp04.lm, trace = FALSE) 
 
 anova(avp04.step, avp04.lm)
 
@@ -264,7 +281,7 @@ summary(avp04.step)
 avp48.lm <- lm(avp48_mean ~ (diagnosed.number + suspected.number + 
                                     LOC + amnesia)^2,
                data = average.outcomes)
-avp48.step <- stepAIC(avp48.lm, trace = FALSE) 
+avp48.step <- MASS::stepAIC(avp48.lm, trace = FALSE) 
 
 anova(avp48.step, avp48.lm)
 
@@ -275,7 +292,7 @@ summary(gvlma(avp48.lm))
 avp48.lm <- lm(log(avp48_mean) ~ (diagnosed.number + suspected.number + 
                                LOC + amnesia)^2,
                data = average.outcomes)
-avp48.step <- stepAIC(avp48.lm, trace = FALSE) 
+avp48.step <- MASS::stepAIC(avp48.lm, trace = FALSE) 
 
 anova(avp48.step, avp48.lm)
 
@@ -286,7 +303,7 @@ deletion.gvlma(gvlma(avp48.step))
 avp48.lm <- lm(log(avp48_mean) ~ (diagnosed.number + suspected.number + 
                                     LOC + amnesia)^2,
                data = average.outcomes[c(-39),])
-avp48.step <- stepAIC(avp48.lm, trace = FALSE) 
+avp48.step <- MASS::stepAIC(avp48.lm, trace = FALSE) 
 
 anova(avp48.step, avp48.lm)
 
@@ -298,7 +315,7 @@ summary(avp48.step)
 avp812.lm <- lm(avp812_mean ~ (diagnosed.number + suspected.number + 
                                  LOC + amnesia)^2,
                data = average.outcomes)
-avp812.step <- stepAIC(avp812.lm, trace = FALSE) 
+avp812.step <- MASS::stepAIC(avp812.lm, trace = FALSE) 
 
 anova(avp812.step, avp812.lm)
 
@@ -309,7 +326,7 @@ plot(gvlma(avp812.step))
 avp812.lm <- lm(log(avp812_mean) ~ (diagnosed.number + suspected.number + 
                                  LOC + amnesia)^2,
                 data = average.outcomes)
-avp812.step <- stepAIC(avp812.lm, trace = FALSE) 
+avp812.step <- MASS::stepAIC(avp812.lm, trace = FALSE) 
 
 anova(avp812.step, avp812.lm)
 
@@ -325,7 +342,7 @@ calc.relimp(rmse.step, type = c("lmg"), rela = FALSE)
 calc.relimp(avp04.step, type = c("lmg"), rela = FALSE)
 calc.relimp(avp48.step, type = c("lmg"), rela = FALSE)
 calc.relimp(avp812.step, type = c("lmg"), rela = FALSE)
-}
+
 
 
 #----------------------------------------------------------------------####
@@ -335,7 +352,7 @@ calc.relimp(avp812.step, type = c("lmg"), rela = FALSE)
 mmse.cv.lm <- lm(raw.complexity_cv ~ (diagnosed.number + suspected.number + 
                                        LOC + amnesia)^2,
               data = average.outcomes)
-mmse.cv.step <- stepAIC(mmse.cv.lm, trace = FALSE) 
+mmse.cv.step <- MASS::stepAIC(mmse.cv.lm, trace = FALSE) 
 
 anova(mmse.cv.step, mmse.cv.lm)
 
@@ -348,7 +365,7 @@ summary(mmse.cv.step)
 dt.mmse.cv.lm <- lm(detrended.complexity_cv ~ (diagnosed.number + suspected.number + 
                                                 LOC + amnesia)^2,
                  data = average.outcomes)
-dt.mmse.cv.step <- stepAIC(dt.mmse.cv.lm, trace = FALSE) 
+dt.mmse.cv.step <- MASS::stepAIC(dt.mmse.cv.lm, trace = FALSE) 
 
 anova(dt.mmse.cv.step, dt.mmse.cv.lm)
 
@@ -359,7 +376,7 @@ plot(gvlma(dt.mmse.cv.step))
 dt.mmse.cv.lm <- lm(log(detrended.complexity_cv) ~ (diagnosed.number + suspected.number + 
                                                  LOC + amnesia)^2,
                     data = average.outcomes)
-dt.mmse.cv.step <- stepAIC(dt.mmse.cv.lm, trace = FALSE) 
+dt.mmse.cv.step <- MASS::stepAIC(dt.mmse.cv.lm, trace = FALSE) 
 
 anova(dt.mmse.cv.step, dt.mmse.cv.lm)
 
@@ -372,7 +389,7 @@ summary(dt.mmse.cv.step)
 rmse.cv.lm <- lm(rmse.V_cv ~ (diagnosed.number + suspected.number + 
                                LOC + amnesia)^2,
               data = average.outcomes)
-rmse.cv.step <- stepAIC(rmse.cv.lm, trace = FALSE) 
+rmse.cv.step <- MASS::stepAIC(rmse.cv.lm, trace = FALSE) 
 
 anova(rmse.cv.step, rmse.cv.lm)
 
@@ -383,7 +400,7 @@ plot(gvlma(rmse.cv.step))
 rmse.cv.lm <- lm(log(rmse.V_cv) ~ (diagnosed.number + suspected.number + 
                                     LOC + amnesia)^2,
               data = average.outcomes)
-rmse.cv.step <- stepAIC(rmse.cv.lm, trace = FALSE) 
+rmse.cv.step <- MASS::stepAIC(rmse.cv.lm, trace = FALSE) 
 
 anova(rmse.cv.step, rmse.cv.lm)
 
@@ -397,7 +414,7 @@ summary(rmse.cv.step)
 avp04.cv.lm <- lm(avp04_cv ~ (diagnosed.number + suspected.number + 
                                LOC + amnesia)^2,
                data = average.outcomes)
-avp04.cv.step <- stepAIC(avp04.cv.lm, trace = FALSE) 
+avp04.cv.step <- MASS::stepAIC(avp04.cv.lm, trace = FALSE) 
 
 anova(avp04.cv.step, avp04.cv.lm)
 
@@ -409,7 +426,7 @@ summary(avp04.cv.step)
 avp48.cv.lm <- lm(avp48_cv ~ (diagnosed.number + suspected.number + 
                                LOC + amnesia)^2,
                data = average.outcomes)
-avp48.cv.step <- stepAIC(avp48.cv.lm, trace = FALSE) 
+avp48.cv.step <- MASS::stepAIC(avp48.cv.lm, trace = FALSE) 
 
 anova(avp48.cv.step, avp48.cv.lm)
 
@@ -421,7 +438,7 @@ summary(avp48.cv.step)
 avp812.cv.lm <- lm(avp812_cv ~ (diagnosed.number + suspected.number + 
                                  LOC + amnesia)^2,
                 data = average.outcomes)
-avp812.cv.step <- stepAIC(avp812.cv.lm, trace = FALSE) 
+avp812.cv.step <- MASS::stepAIC(avp812.cv.lm, trace = FALSE) 
 
 anova(avp812.cv.step, avp812.cv.lm)
 
@@ -437,3 +454,153 @@ calc.relimp(rmse.cv.step, type = c("lmg"), rela = FALSE)
 calc.relimp(avp04.cv.step, type = c("lmg"), rela = FALSE)
 calc.relimp(avp48.cv.step, type = c("lmg"), rela = FALSE)
 calc.relimp(avp812.cv.step, type = c("lmg"), rela = FALSE)
+
+#--------------------Fit alternative models-----------------------------------------------------------####
+average.outcomes.dxonly <- filter(average.outcomes, 
+                                diagnosed.number > 0 | prior.concussion == "No")
+
+average.outcomes.nodx <- filter(average.outcomes,
+                                diagnosed.number == 0)
+
+### Raw complexity ---------------------------------------------------------####
+## Alternative 1 ----------------------------------------------------------------
+mmse.lm.dxonly <- lm(raw.complexity_mean ~ (diagnosed.number + suspected.number + 
+                                       LOC + amnesia)^2,
+              data = average.outcomes.dxonly)
+mmse.step.dxonly <- MASS::stepAIC(mmse.lm.dxonly, trace = FALSE) 
+
+anova(mmse.step.dxonly, mmse.lm.dxonly)
+
+summary(gvlma(mmse.lm.dxonly))
+plot(gvlma(mmse.lm.dxonly))
+summary(mmse.lm.dxonly)
+
+## Alternative 2 -----------------------------------------------------------------
+mmse.lm.dxonly.2 <- lm(raw.complexity_mean ~ diagnosed.number + suspected.number,
+                   data = average.outcomes.dxonly)
+mmse.step.dxonly.2 <- MASS::stepAIC(mmse.lm.dxonly.2, trace = FALSE) 
+
+anova(mmse.step.dxonly.2, mmse.lm.dxonly.2)
+
+summary(gvlma(mmse.lm.dxonly.2))
+plot(gvlma(mmse.lm.dxonly.2))
+summary(mmse.lm.dxonly.2)
+
+## Alternative 3 ------------------------------------------------------------------
+mmse.lm.nodx <- lm(raw.complexity_mean ~ (suspected.number + 
+                                            LOC + amnesia)^2,
+                   data = average.outcomes.nodx)
+mmse.step.nodx <- MASS::stepAIC(mmse.lm.nodx, trace = FALSE) 
+
+anova(mmse.step.nodx, mmse.lm.nodx)
+
+summary(gvlma(mmse.lm.nodx))
+plot(gvlma(mmse.lm.nodx))
+summary(mmse.lm.nodx)
+
+
+
+### Detrended complexity ---------------------------------------------------------####
+## Alternative 1 ----------------------------------------------------------------
+# Fit with only diagnosed concussions
+dt.mmse.lm.dxonly <- lm(detrended.complexity_mean ~ (diagnosed.number + suspected.number + 
+                                            LOC + amnesia)^2,
+                   data = average.outcomes.dxonly)
+dt.mmse.step.dxonly <- MASS::stepAIC(dt.mmse.lm.dxonly, trace = FALSE) 
+
+anova(dt.mmse.step.dxonly, dt.mmse.lm.dxonly)
+
+summary(gvlma(dt.mmse.step.dxonly))
+plot(gvlma(dt.mmse.step.dxonly))
+dt.mmse.step.dxonly.del <- deletion.gvlma(gvlma(dt.mmse.step.dxonly))
+display.delstats(dt.mmse.step.dxonly.del$DeltaStat4, dt.mmse.step.dxonly.del$Stat4pvalue)
+
+#-----------------------------------------------------------------------------------------#
+dt.mmse.lm.dxonly <- lm(detrended.complexity_mean ~ (diagnosed.number + suspected.number + 
+                                                     LOC + amnesia)^2,
+                      data = average.outcomes.dxonly[c(average.outcomes.dxonly$id != 918 &
+                                                     average.outcomes.dxonly$id != 533),])
+dt.mmse.step.dxonly <- MASS::stepAIC(dt.mmse.lm.dxonly, trace = FALSE) 
+
+anova(dt.mmse.step.dxonly, dt.mmse.lm.dxonly)
+
+summary(gvlma(dt.mmse.step.dxonly))
+plot(gvlma(dt.mmse.step.dxonly))
+dt.mmse.step.dxonly.del <- deletion.gvlma(gvlma(dt.mmse.step.dxonly))
+display.delstats(dt.mmse.step.dxonly.del$DeltaStat4, dt.mmse.step.dxonly.del$Stat4pvalue)
+
+summary(dt.mmse.step.dxonly)
+
+# Fit with suspected only
+dt.mmse.lm.nodx <- lm(detrended.complexity_mean ~ (suspected.number + 
+                                                       LOC + amnesia)^2,
+                        data = average.outcomes.nodx)
+dt.mmse.step.nodx <- MASS::stepAIC(dt.mmse.lm.nodx, trace = FALSE) 
+
+anova(dt.mmse.step.nodx, dt.mmse.lm.nodx)
+
+summary(gvlma(dt.mmse.lm.nodx))
+plot(gvlma(dt.mmse.lm.nodx))
+summary(dt.mmse.lm.nodx)
+dt.mmse.step.nodx.del <- deletion.gvlma(gvlma(dt.mmse.lm.nodx))
+display.delstats(dt.mmse.step.nodx.del$DeltaStat4, dt.mmse.step.nodx.del$Stat4pvalue)
+
+## Alternative 2 ------------------------------------------------------------------------------------
+# Gender
+dt.mmse.lm.gender <- lm(detrended.complexity_mean ~ (diagnosed.number + suspected.number + gender +  
+                                                       LOC + amnesia)^2,
+                        data = average.outcomes)
+dt.mmse.step.gender <- MASS::stepAIC(dt.mmse.lm.gender, trace = FALSE) 
+
+anova(dt.mmse.step.gender, dt.mmse.lm.gender)
+
+summary(gvlma(dt.mmse.step.gender))
+plot(gvlma(dt.mmse.step.gender))
+
+# Gender and TFI
+dt.mmse.lm.genderTFI <- lm(detrended.complexity_mean ~ (diagnosed.number + suspected.number + gender + tfi.nom +  
+                                                       LOC + amnesia)^2,
+                        data = average.outcomes)
+dt.mmse.step.genderTFI <- MASS::stepAIC(dt.mmse.lm.genderTFI, trace = FALSE) 
+
+anova(dt.mmse.step.genderTFI, dt.mmse.lm.genderTFI)
+
+summary(gvlma(dt.mmse.step.genderTFI))
+plot(gvlma(dt.mmse.step.genderTFI))
+
+## Fit CV ---------------------------------------------------------------------------
+dt.mmse.cv.lm.dxonly <- lm(log(detrended.complexity_cv) ~ (diagnosed.number + suspected.number + 
+                                                       LOC + amnesia)^2,
+                        data = average.outcomes.dxonly)
+dt.mmse.cv.step.dxonly <- MASS::stepAIC(dt.mmse.cv.lm.dxonly, trace = FALSE)
+
+anova(dt.mmse.cv.step.dxonly, dt.mmse.cv.lm.dxonly)
+
+summary(gvlma(dt.mmse.cv.step.dxonly))
+plot(gvlma(dt.mmse.cv.step.dxonly))
+
+
+dt.mmse.cv.lm.nodx <- lm(log(detrended.complexity_cv) ~ (diagnosed.number + suspected.number + 
+                                                        LOC + amnesia)^2,
+                           data = average.outcomes.nodx)
+dt.mmse.cv.step.nodx <- MASS::stepAIC(dt.mmse.cv.lm.nodx, trace = FALSE)
+
+anova(dt.mmse.cv.step.nodx, dt.mmse.cv.lm.nodx)
+
+summary(gvlma(dt.mmse.cv.step.nodx))
+plot(gvlma(dt.mmse.cv.step.nodx))
+
+
+# Include gender
+dt.mmse.cv.lm.gender <- lm(log(detrended.complexity_cv) ~ (diagnosed.number + suspected.number +gender +
+                                                             LOC + amnesia)^2,
+                           data = average.outcomes)
+dt.mmse.cv.step.gender <- MASS::stepAIC(dt.mmse.cv.lm.gender, trace = FALSE)
+
+anova(dt.mmse.cv.step.gender, dt.mmse.cv.lm.gender)
+
+summary(gvlma(dt.mmse.cv.step.gender))
+plot(gvlma(dt.mmse.cv.step.gender))
+
+summary(dt.mmse.cv.step.gender)
+

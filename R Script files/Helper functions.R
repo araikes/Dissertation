@@ -125,6 +125,15 @@ cv <- function(x){
   sd(x)/mean(x)
 }
     
+round_pred <- function(x){
+  round(x + 0.00001)
+}
+
+predictive_ability <- function(real, pred){
+  require(caret)
+  
+  confusionMatrix(pred, real)
+}
     
   
   
