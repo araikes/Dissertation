@@ -84,6 +84,7 @@ boxplot_outliers <- function(y, outlier, outcome, data){
   ggplot(data = data, aes_string(x = 1, y)) +
     facet_wrap(reformulate(outcome), scales = "free") +
     geom_boxplot() +
+    geom_jitter(width = 0.2) +
     geom_text(aes_string(label = outlier), na.rm = TRUE, hjust = -0.3) +
     xlab("") +
     ylab("") +
@@ -97,7 +98,7 @@ participant_inclusion <- function(x){
   select(x, id, trial) %>%
     group_by(id) %>%
     summarise(count = n()) %>%
-    filter(count > 5) %>%
+    filter(count >= 5) %>%
     select(id)
 }
 

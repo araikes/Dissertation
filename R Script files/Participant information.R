@@ -40,10 +40,22 @@ participants <- participant.info %>%
   left_join(concussion.symptoms) %>%
   left_join(participant.order) %>%
   select(id, block, order, gender, hand, height, weight, gamer, age, 
-         diagnosed.number, suspected.number, LOC, seizure, amnesia, 
+         diagnosed.number, suspected.number, LOC, LOC.number, LOC.number2, 
+         seizure, amnesia, retrograde.duration1, retrograde.duration2, anterograde.duration1,
+         anterograde.duration2, anterograde.duration3, anterograde.duration4,
          sx.current, diagnosed.recent, suspected.recent) %>%
   mutate(concussion.number = diagnosed.number + suspected.number,
-         prior.concussion = ifelse(concussion.number != 0, "Yes", "No"))
+         prior.concussion = ifelse(concussion.number != 0, "Yes", "No"),
+         LOC.number = ifelse(is.na(LOC.number), 0, LOC.number),
+         LOC.number2 = ifelse(is.na(LOC.number2), 0, LOC.number2),
+         retrograde.duration1 = ifelse(retrograde.duration1 == 0, NA, retrograde.duration1),
+         anterograde.duration1 = ifelse(anterograde.duration1 == 0, NA, anterograde.duration1)) %>%
+  group_by(id) %>%
+  mutate(total.loc = sum(LOC.number, LOC.number2),
+         total.retrograde = sum(!is.na(retrograde.duration1), !is.na(retrograde.duration2)),
+         total.anterograde = sum(!is.na(anterograde.duration1), !is.na(anterograde.duration2),
+                                 !is.na(anterograde.duration3), !is.na(anterograde.duration4))) %>%
+  ungroup()
 
 #### Remove unnecessary dataframes ####
 rm(list = c("participant.info", "diagnosed.concussions", 

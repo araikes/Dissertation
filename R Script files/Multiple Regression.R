@@ -43,7 +43,8 @@ trial.summary <- read.csv("./Data Files/Trial Summary.csv",
 # Removal is based on criteria:
 # 1. Number of visible points per trial is > 20%
 # 2. Trials do not include areas of 0 slope, indicating removal of the finger from the load cell.
-# 3. Participants are removed if the number of valid trials < 6.
+# 3. Participants are removed if the number of valid trials < 5.
+# 4. Participants are removed if there are current symptoms
 bad.trials <- read.csv("./Data Files/Excluded Trials.csv",
                        header = TRUE, sep = ",")
 
@@ -62,11 +63,13 @@ detrended.mmse.long <- mmse.detrended.data %>%
   mutate_if(is.character, funs(editVars)) %>%
   mutate_if(is.character, as.numeric)
 
-#rm(list = c("mmse.data", "mmse.data.long"))
+rm(list = c("mmse.data", "mmse.detrended.data"))
 
 #### Get first fifty valid participants ####
 first.fifty <- participants %>%
   semi_join(valid.trials) %>%
+  filter(sx.current != "Yes" || is.na(sx.current)) %>%
+  filter(hand != "Left") %>%
   select(id, order) %>%
   arrange(order) %>%
   filter(row_number(order) <= 50)
@@ -108,48 +111,48 @@ detrended.complexity <- detrended.mmse.long %>%
 complexity <- bind_rows(raw.complexity, detrended.complexity) %>%
   spread(type, complexity)
 
-#rm(list = c("raw.complexity", "detrended.complexity"))
+rm(list = c("raw.complexity", "detrended.complexity"))
 
 #### Composite data frame ####
 avp.data <- semi_join(avp.data, first.fifty.valid)
 
 trial.summary <- semi_join(trial.summary, first.fifty.valid)
 
+injury.time <- c("Uninjured", "Recent", "Remote")
+
 participants <- semi_join(participants, first.fifty) %>%
   select(id, block, order, gender, hand, gamer, prior.concussion, 
          LOC, amnesia, sx.current, age, height, weight, diagnosed.number, 
-         suspected.number, concussion.number, diagnosed.recent, suspected.recent)
-
-injury.time <- c("Uninjured", "Recent", "Remote")
+         suspected.number, concussion.number, total.loc, total.retrograde, total.anterograde,
+         diagnosed.recent, suspected.recent) %>%
+  group_by(id) %>%
+  mutate(tfi.min = age - max(diagnosed.recent, suspected.recent, na.rm = TRUE) - 1,
+         tfi.max = age - max(diagnosed.recent, suspected.recent, na.rm = TRUE),
+         tfi.min.nom = ifelse(tfi.min == Inf, "Uninjured", 
+                          ifelse(tfi.min > 0.5, "Remote", "Recent")),
+         tfi.max.nom = ifelse(tfi.max == Inf, "Uninjured", 
+                              ifelse(tfi.max > 0.5, "Remote", "Recent")))
 
 trial.outcomes <- left_join(complexity, avp.data) %>%
   left_join(trial.summary) %>%
-  left_join(participants) %>%
-  select(id, trial, block, order, gender, hand, gamer, prior.concussion, 
-         LOC, amnesia, sx.current, age, height, weight, diagnosed.number, 
-         suspected.number, concussion.number, diagnosed.recent, suspected.recent,
-         center.N, rmse.V, raw.complexity, detrended.complexity,
-         avp04, avp48, avp812) %>%
-  mutate(tfi = age - max(diagnosed.recent, suspected.recent, na.rm = TRUE) - 1,
-         tfi.nom = ifelse(tfi == Inf, "Uninjured", 
-                                          ifelse(tfi > 1, "Remote", "Recent")),
-         tfi.nom = factor(tfi.nom, levels = injury.time))
+  select(-valid.newtons, -valid.volts, -rmse.N)
 
 #### Summarise individual outcomes ####
-# Not ideal coding but functional
 average.outcomes <- trial.outcomes %>%
-  group_by(id, block, order, gender, hand, gamer, prior.concussion, LOC, amnesia, sx.current,
-           age, height, weight, diagnosed.number, suspected.number, concussion.number, tfi.nom, center.N) %>%
+  group_by(id) %>%
   summarise_each(funs(mean, cv, n()), rmse.V, raw.complexity, detrended.complexity, 
                  avp04, avp48, avp812) %>%
   ungroup() %>%
   select(id:rmse.V_n) %>%
-  rename(trials = rmse.V_n)
+  rename(trials = rmse.V_n) %>%
+  left_join(participants) %>%
+  select(id, order, block, trials, gender:tfi.max.nom, everything()) 
 
 #### Descriptive statistics ####
 table1(participants,
        height, weight, age, gender, hand, gamer, LOC, amnesia,
        as.factor(diagnosed.number), as.factor(suspected.number), as.factor(concussion.number),
+       as.factor(total.loc), as.factor(total.retrograde), as.factor(total.anterograde),
        splitby = ~prior.concussion,
        test = TRUE,
        output_type = "markdown")  
@@ -189,15 +192,136 @@ for (i in 1:length(outcomes)){
   print(scat)
 }
 
+#### Profile plots ####
+
+ggplot(data = average.outcomes, aes(x = diagnosed.number, y = raw.complexity_mean,
+                                    col = interaction(gender, LOC))) +
+  geom_point(aes(shape = amnesia))
+
+ggplot(data = average.outcomes, aes(x = suspected.number, y = raw.complexity_mean,
+                                    col = interaction(gender, LOC))) +
+  geom_point(aes(shape = amnesia))
+
+### 3D scatterplot
+require(scatterplot3d)
+shapes = c(16,17)
+shapes <- shapes[as.numeric(average.outcomes$gender)]
+
+# 3D Scatter plot of numbers of concussions, loc/amnesia amount, complexity
+with(average.outcomes, {
+  # Diagnosed number----
+  scatterplot3d(x = diagnosed.number,
+                y = suspected.number,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = diagnosed.number,
+                y = total.loc,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = diagnosed.number,
+                y = total.retrograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = diagnosed.number,
+                y = total.anterograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  
+  # Suspected number-----
+  scatterplot3d(x = suspected.number,
+                y = suspected.number,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = suspected.number,
+                y = total.loc,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = suspected.number,
+                y = total.retrograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = suspected.number,
+                y = total.anterograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  
+  # Total number----
+  scatterplot3d(x = concussion.number,
+                y = suspected.number,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = concussion.number,
+                y = total.loc,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = concussion.number,
+                y = total.retrograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 100,
+                type = "h")
+  scatterplot3d(x = concussion.number,
+                y = total.anterograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+})
+
+with(average.outcomes, {
+  scatterplot3d(x = diagnosed.number,
+                y = suspected.number,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = diagnosed.number,
+                y = total.loc,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = diagnosed.number,
+                y = total.retrograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+  scatterplot3d(x = diagnosed.number,
+                y = total.anterograde,
+                z = raw.complexity_mean,
+                pch = shapes,
+                angle = 135,
+                type = "h")
+})
+
 #-------------Models as defined in my dissertation proposal--------------------####
 #### Fit linear models for average values ####
 # These will fit the linear models specifically defined in the dissertation proposal.
-require(MASS)
 require(gvlma)
 
 average.outcomes <- rename(average.outcomes, total.concussions = concussion.number) %>%
-  mutate(age.c = age - mean(age)) %>%
-  arrange(order)
+  mutate(age.c = age - mean(age))
 
 ### Average raw complexity ####
 mmse.lm <- lm(raw.complexity_mean ~ (diagnosed.number + suspected.number + 
@@ -275,6 +399,17 @@ anova(avp04.step, avp04.lm)
 
 summary(gvlma(avp04.step))
 plot(gvlma(avp04.step))
+
+# Drop outlier
+avp04.lm <- lm(avp04_mean ~ (diagnosed.number + suspected.number + 
+                               LOC + amnesia)^2,
+               data = average.outcomes[average.outcomes$id != 918,])
+avp04.step <- MASS::stepAIC(avp04.lm, trace = FALSE) 
+
+anova(avp04.step, avp04.lm)
+
+summary(gvlma(avp04.step))
+plot(gvlma(avp04.step), onepage = FALSE)
 summary(avp04.step)
 
 ### Average Power from 4-8 Hz ####
@@ -288,21 +423,10 @@ anova(avp48.step, avp48.lm)
 summary(gvlma(avp48.step))
 summary(gvlma(avp48.lm))
 
-# Log transformation
-avp48.lm <- lm(log(avp48_mean) ~ (diagnosed.number + suspected.number + 
-                               LOC + amnesia)^2,
-               data = average.outcomes)
-avp48.step <- MASS::stepAIC(avp48.lm, trace = FALSE) 
-
-anova(avp48.step, avp48.lm)
-
-summary(gvlma(avp48.step))
-deletion.gvlma(gvlma(avp48.step))
-
 # Drop one observation
-avp48.lm <- lm(log(avp48_mean) ~ (diagnosed.number + suspected.number + 
+avp48.lm <- lm(avp48_mean ~ (diagnosed.number + suspected.number + 
                                     LOC + amnesia)^2,
-               data = average.outcomes[c(-39),])
+               data = average.outcomes[c(-18),])
 avp48.step <- MASS::stepAIC(avp48.lm, trace = FALSE) 
 
 anova(avp48.step, avp48.lm)
@@ -320,7 +444,7 @@ avp812.step <- MASS::stepAIC(avp812.lm, trace = FALSE)
 anova(avp812.step, avp812.lm)
 
 summary(gvlma(avp812.step))
-plot(gvlma(avp812.step))
+plot(gvlma(avp812.step), onepage = FALSE)
 
 ### Log transform 
 avp812.lm <- lm(log(avp812_mean) ~ (diagnosed.number + suspected.number + 
@@ -373,7 +497,7 @@ summary(gvlma(dt.mmse.cv.step))
 plot(gvlma(dt.mmse.cv.step))
 
 # Log transformation
-dt.mmse.cv.lm <- lm(log(detrended.complexity_cv) ~ (diagnosed.number + suspected.number + 
+dt.mmse.cv.lm <- lm(sqrt(detrended.complexity_cv) ~ (diagnosed.number + suspected.number + 
                                                  LOC + amnesia)^2,
                     data = average.outcomes)
 dt.mmse.cv.step <- MASS::stepAIC(dt.mmse.cv.lm, trace = FALSE) 
@@ -393,7 +517,7 @@ rmse.cv.step <- MASS::stepAIC(rmse.cv.lm, trace = FALSE)
 
 anova(rmse.cv.step, rmse.cv.lm)
 
-summary(gvlma(rmse.cv.step))
+summary(gvlma(rmse.cv.lm))
 plot(gvlma(rmse.cv.step))
 
 # Log transformation
@@ -419,7 +543,7 @@ avp04.cv.step <- MASS::stepAIC(avp04.cv.lm, trace = FALSE)
 anova(avp04.cv.step, avp04.cv.lm)
 
 summary(gvlma(avp04.cv.step))
-plot(gvlma(avp04.cv.step))
+plot(gvlma(avp04.cv.step), onepage = FALSE)
 summary(avp04.cv.step)
 
 ### Average Power from 4-8 Hz CV ####
@@ -593,7 +717,7 @@ plot(gvlma(dt.mmse.cv.step.nodx))
 
 # Include gender
 dt.mmse.cv.lm.gender <- lm(log(detrended.complexity_cv) ~ (diagnosed.number + suspected.number +gender +
-                                                             LOC + amnesia)^2,
+                                                             LOC + amnesia)^3,
                            data = average.outcomes)
 dt.mmse.cv.step.gender <- MASS::stepAIC(dt.mmse.cv.lm.gender, trace = FALSE)
 
