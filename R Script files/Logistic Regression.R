@@ -109,9 +109,14 @@ complexity <- bind_rows(raw.complexity, detrended.complexity) %>%
 participants <- semi_join(participants, valid.trials) %>%
   select(id, block, order, gender, hand, gamer, prior.concussion, 
          LOC, amnesia, sx.current, age, height, weight, diagnosed.number, 
-         suspected.number, concussion.number, diagnosed.recent, suspected.recent)
+         suspected.number, concussion.number, diagnosed.recent, suspected.recent) %>%
+  filter(sx.current != "Yes" | is.na(sx.current)) %>%
+  filter(hand != "Left")
 
-trial.outcomes <- left_join(complexity, dfa.data) %>%
+valid.participants <- select(participants, id)
+
+trial.outcomes <- semi_join(complexity, valid.participants) %>%
+  left_join(dfa.data) %>%
   left_join(avp.data) %>%
   left_join(participants) %>%
   select(id, trial, block, order, gender, hand, gamer, prior.concussion, 
@@ -281,6 +286,7 @@ set.seed(2000000)
 
 concussion.crossval <- select(average.outcomes, id, gender, prior.concussion, raw.complexity_mean:alpha_cv, dx.status) %>%
   filter(dx.status != "Susp Only") %>%
+  mutate(prior.concussion = ifelse(prior.concussion == "Yes", 1, 0)) %>%
   crossv_kfold(10)
 
 

@@ -68,7 +68,7 @@ rm(list = c("mmse.data", "mmse.detrended.data"))
 #### Get first fifty valid participants ####
 first.fifty <- participants %>%
   semi_join(valid.trials) %>%
-  filter(sx.current != "Yes" || is.na(sx.current)) %>%
+  filter(sx.current != "Yes" | is.na(sx.current)) %>%
   filter(hand != "Left") %>%
   select(id, order) %>%
   arrange(order) %>%
@@ -372,7 +372,7 @@ rmse.step <- MASS::stepAIC(rmse.lm, trace = FALSE)
 
 anova(rmse.step, rmse.lm)
 
-summary(gvlma(rmse.step))
+summary(gvlma(rmse.lm))
 plot(gvlma(rmse.step))
 
 # Log transformation
@@ -397,8 +397,8 @@ avp04.step <- MASS::stepAIC(avp04.lm, trace = FALSE)
 
 anova(avp04.step, avp04.lm)
 
-summary(gvlma(avp04.step))
-plot(gvlma(avp04.step))
+summary(gvlma(avp04.lm))
+plot(gvlma(avp04.lm), onepage = FALSE)
 
 # Drop outlier
 avp04.lm <- lm(avp04_mean ~ (diagnosed.number + suspected.number + 
@@ -422,11 +422,13 @@ anova(avp48.step, avp48.lm)
 
 summary(gvlma(avp48.step))
 summary(gvlma(avp48.lm))
+plot(gvlma(avp48.lm), onepage = FALSE)
+deletion.gvlma(gvlma(avp48.lm))
 
 # Drop one observation
 avp48.lm <- lm(avp48_mean ~ (diagnosed.number + suspected.number + 
                                     LOC + amnesia)^2,
-               data = average.outcomes[c(-18),])
+               data = average.outcomes[c(-17),])
 avp48.step <- MASS::stepAIC(avp48.lm, trace = FALSE) 
 
 anova(avp48.step, avp48.lm)
@@ -455,7 +457,7 @@ avp812.step <- MASS::stepAIC(avp812.lm, trace = FALSE)
 anova(avp812.step, avp812.lm)
 
 summary(gvlma(avp812.step))
-plot(gvlma(avp812.step))
+plot(gvlma(avp812.step), onepage = FALSE)
 summary(avp812.step)
 
 #### Calculate partial R2 for average models ####
@@ -528,7 +530,7 @@ rmse.cv.step <- MASS::stepAIC(rmse.cv.lm, trace = FALSE)
 
 anova(rmse.cv.step, rmse.cv.lm)
 
-summary(gvlma(rmse.cv.step))
+summary(gvlma(rmse.cv.lm))
 plot(gvlma(rmse.cv.step))
 
 plot(rmse.cv.step)
@@ -555,7 +557,7 @@ avp48.cv.step <- MASS::stepAIC(avp48.cv.lm, trace = FALSE)
 anova(avp48.cv.step, avp48.cv.lm)
 
 summary(gvlma(avp48.cv.step))
-plot(gvlma(avp48.cv.step))
+plot(gvlma(avp48.cv.step), onepage = FALSE)
 summary(avp48.cv.step)
 
 ### Average Power from 8-12 Hz CV ####
