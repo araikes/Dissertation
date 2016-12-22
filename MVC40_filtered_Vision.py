@@ -36,7 +36,7 @@ runningtime = []
 subjects = []
 
 # Set conditions for computing MMSE, average power, and DFA
-r = 0.15
+r = 0.2
 scale = 34
 bin_ends = [4.0, 8.0, 12.0]
 dfa_lengths = [10, 122]
@@ -122,9 +122,9 @@ tmp.extend(['subject', 'trial', 'center'])
 rawdata_data.columns = tmp
 
 # First Run
-mmse_data.to_csv("Original Data Files\MMSE_r15.csv", header = True)
+mmse_data.to_csv("Original Data Files\MMSE.csv", header = True)
 subject_data.to_csv("Original Data Files\Subjects.csv", header = True)
 rawdata_data.to_csv("Original Data Files\Raw Data.csv", header = True)
-detrended_data.to_csv("Original Data Files\Detrended MMSE_r15.csv", header = True)
+detrended_data.to_csv("Original Data Files\Detrended MMSE.csv", header = True)
 dfa_data.to_csv("Original Data Files\DFA.csv", header = True)
 avp_data.to_csv("Original Data Files\AvP.csv", header = True)
