@@ -34,6 +34,7 @@ require(tidyverse)
 #### Load data ####
 # Data is located in ./Data Files as a CSV file
 raw.data <- read.csv("./Data Files/Raw Data.csv")
+order <- read.csv("./Data Files/Order.csv")
 
 # View data
 head(raw.data)
@@ -97,7 +98,9 @@ trial.summary <- raw.data.long %>%
             rmse.V = sqrt(mean((yvals-center)^2))) %>%
   ungroup() %>%
   mutate(valid.newtons = force.valid$valid.newtons,
-         valid.volts = force.valid$valid.volts)
+         valid.volts = force.valid$valid.volts) %>%
+  left_join(order) %>%
+  arrange(order)
 
 # #### Create validation plots ####
 # # These plots will plot the raw trace from 4sec-29sec. The first 4 and last 1

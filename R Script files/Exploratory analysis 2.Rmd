@@ -98,6 +98,8 @@ dfa.data <- read.csv(paste(my_dir, "/Data Files/DFA.csv", sep = ""),
                      header = TRUE, sep = ",")
 avp.data <- read.csv(paste(my_dir, "./Data Files/AvP.csv", sep = ""),
                      header = TRUE, sep = ",")
+order <- read.csv(paste(my_dir, "./Data Files/Order.csv", sep = ""),
+                  header = TRUE, sep = ",")
 
 # Create dataframe with only complexity for MMSE and detrended MMSE
 raw.complexity <- group_by(mmse.data, id) %>%
@@ -196,7 +198,10 @@ individual.frame <- bind_rows(raw.complexity, detrended.complexity,
 
 individual.frame <- semi_join(individual.frame, valid.trials) %>%
   group_by(id, outcome) %>%
-  mutate(outlier = ifelse(is_outlier(value), trial, as.numeric(NA)))
+  mutate(outlier = ifelse(is_outlier(value), trial, as.numeric(NA))) %>%
+  ungroup() %>%
+  left_join(order) %>%
+  arrange(order)
 ```
 
 ```{r individualOutcomes, fig.height = 8, fig.width = 14}
