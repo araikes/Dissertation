@@ -1,0 +1,370 @@
+#### File Description ####
+# Author: Adam Raikes
+# Initial Date: 12/28/2016
+# Local Depends: Multiple Regression.R, Alternative multiple regression.R
+# Local Files: 
+#
+# Description: Plots of regression outcomes using the original and the highest
+# R2 model. These plots only include significant predictors
+
+#### Load libraries ####
+require(ggplot2)
+
+#### Complexity plots ####
+# Alternative mean model ----
+ggplot(data = average.outcomes, aes(x = total.concussions, 
+                                    y = detrended.complexity_mean,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE) +
+  xlab("Total number of concussions") +
+  ylab("Average complexity") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) + 
+  guides(colour = guide_legend(override.aes = list(linetype = c(1,1),
+                                                   shape = c(NA, NA)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.text = element_text(family ="Arial", size = 14),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+  
+  
+
+
+# Alternative CV model ----
+ggplot(data = average.outcomes, aes(x = diagnosed.number,
+                                    y = detrended.complexity_cv,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE, aes(linetype = amnesia)) +
+  xlab("Number of diagnosed concussions") +
+  ylab("Complexity coefficient of variation") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "Amnesia",
+                        values = c(1,2),
+                        labels = c("No History", "History")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 12),
+    legend.text = element_text(family ="Arial", size = 12),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+ggplot(data = average.outcomes, aes(x = suspected.number,
+                                    y = detrended.complexity_cv,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = LOC)) +
+  xlab("Number of suspected concussions") +
+  ylab("Complexity coefficient of variation") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "LOC",
+                        values = c(1,2),
+                        labels = c("No History", "History")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 12),
+    legend.text = element_text(family ="Arial", size = 12),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+
+
+
+#### RMSE plots ####
+# Alternative mean model ----
+ggplot(data = average.outcomes, aes(x = total.concussions,
+                                    y= rmse.V_mean,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = LOC)) +
+  xlab("Total number of concussions") +
+  ylab("RMSE") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "LOC",
+                        values = c(1,2),
+                        labels = c("No History", "History")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 12),
+    legend.text = element_text(family ="Arial", size = 12),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+## Alternative CV model ----
+# Plot 1 ----
+ggplot(data = average.outcomes, aes(x = diagnosed.number,
+                                    y = rmse.V_cv,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = interaction(LOC, amnesia))) +  
+  xlab("Number of diagnosed concussions") +
+  ylab("RMSE coefficient of variation") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "LOC and Amnesia",
+                        values = c(1,2,3,5),
+                        labels = c("No History", "LOC, no amnesia",
+                                   "Amnesia, no LOC", "Both LOC and amnesia")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2,3,5)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+# Plot 2----
+ggplot(data = average.outcomes, aes(x = suspected.number,
+                                    y = rmse.V_cv,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = interaction(LOC, amnesia))) +  
+  xlab("Number of suspected concussions") +
+  ylab("RMSE coefficient of variation") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "LOC and Amnesia",
+                        values = c(1,2,3,5),
+                        labels = c("No History", "LOC, no amnesia",
+                                   "Amnesia, no LOC", "Both LOC and amnesia")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2,3,5)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+# Plot 3 ----
+ggplot(data = average.outcomes, aes(x = diagnosed.number,
+                                    y = rmse.V_cv,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = as.factor(suspected.number))) +
+  xlab("Number of diagnosed concussions") +
+  ylab("RMSE coefficient of variation") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "Number of suspected concussions",
+                        values = c(1,2,3,5)) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2,3,5)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+
+
+
+
+#### AvP 04 plots ####
+# A priori mean model ----
+ggplot(data = average.outcomes, aes(x = LOC,
+                                    y = avp04_mean)) +
+  geom_boxplot()
+  
+# Alternative CV model ----
+ggplot(data = average.outcomes, aes(x = total.retrograde,
+                                    y = avp04_cv,
+                                    color = as.factor(total.loc))) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = as.factor(total.loc))) +
+  xlab("Number of concussions resulting in retrograde amnesia") +
+  ylab("0-4 Hertz Average Power\ncoefficient of variation") +
+  scale_colour_manual(name = "Number of LOC",
+                      values = c("#0571b0", "#ca0020", "#f4a582", "#92c5de")) +
+  scale_linetype_manual(name = "Number of LOC",
+                        values = c(1,3)) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0,0,0),
+                                                   shape = c(16,16,16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,3)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+
+
+
+
+
+
+
+#### AvP 48 plots ####
+# Alternative mean model ----
+ggplot(data = average.outcomes, aes(x = diagnosed.number,
+                                    y = avp48_mean,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = interaction(LOC, amnesia))) +
+  xlab("Number of diagnosed concussions") +
+  ylab("4-8 Hertz Average Power") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "LOC and Amnesia",
+                        values = c(1,2,3,5),
+                        labels = c("No History", "LOC, no amnesia",
+                                   "Amnesia, no LOC", "Both LOC and amnesia")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2,3,5)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+
+                                    
+# Alternative CV model ----
+ggplot(data = average.outcomes, aes(x = total.concussions,
+                                    y = avp48_cv,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE,
+              aes(linetype = as.factor(total.loc))) +
+  xlab("Number of diagnosed concussions") +
+  ylab("4-8 Hertz Average Power\nCoefficient of Variation") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "Number of LOC",
+                        values = c(1,2)) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 12),
+    axis.text = element_text(family ="Arial", size = 12),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+
+
+#### AvP 812 plots ####
+# Alternative mean models ----
+ggplot(data = average.outcomes, aes(x = suspected.number,
+                                    y = avp812_mean,
+                                    color = gender)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE, 
+              aes(linetype = interaction(as.factor(diagnosed.number),
+                                         LOC))) + 
+  xlab("Number of suspected concussions") +
+  ylab("8-12 Hertz Average Power") +
+  scale_colour_manual(name = "Gender",
+                      values = c("#0571b0", "#ca0020")) +
+  scale_linetype_manual(name = "Diagnosed concussions and LOC",
+                        values = c(1,3,5),
+                        labels = c("0 concussions, no LOC",
+                                   "0 concussions, LOC",
+                                   "1 concussion, LOC")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16))),
+         linetype = guide_legend(override.aes = list(linetype = c(1,3,5)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+
+# Alternative CV model ----
+ggplot(data = average.outcomes, aes(x = suspected.number,
+                                    y = avp812_mean,
+                                    color = LOC)) +
+  geom_jitter(width = 0.25) +
+  stat_smooth(method = "lm", se = FALSE) +
+  xlab("Number of suspected concussions") +
+  ylab("8-12 Hertz Average Power\nCoefficient of Variation") +
+  scale_colour_manual(name = "LOC",
+                      values = c("#0571b0", "#ca0020")) +
+  guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
+                                                   shape = c(16,16)))) + 
+  theme_classic() +
+  theme(
+    title = element_text(family ="Arial", size = 14),
+    axis.text = element_text(family ="Arial", size = 14),
+    legend.title = element_text(family = "Arial", size = 10),
+    legend.text = element_text(family ="Arial", size = 10),
+    axis.line.x = element_line(colour = "black", linetype = "solid",
+                               size = 1),
+    axis.line.y = element_line(colour = "black", linetype = "solid",
+                               size = 1))
+

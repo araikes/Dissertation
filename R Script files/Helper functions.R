@@ -135,6 +135,10 @@ predictive_ability <- function(real, pred){
   
   confusionMatrix(pred, real)
 }
+
+editNAN <- function(x){
+  return(x[is.nan(x)] <- 0)
+}
     
   
   
