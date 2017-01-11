@@ -50,7 +50,7 @@ bad.trials <- read.csv("./Data Files/Excluded Trials.csv",
 
 valid.trials <- trial_inclusion(trial.summary, bad.trials)
 
-rm(list = c("bad.trials", "trial.summary"))
+rm(list = c("bad.trials"))
 
 
 #### Transform MMSE dataframes to long and convert scales from chr to numeric ####
@@ -64,9 +64,7 @@ detrended.mmse.long <- mmse.detrended.data %>%
   mutate_if(is.character, funs(editVars)) %>%
   mutate_if(is.character, as.numeric)
 
-#rm(list = c("mmse.data", "mmse.data.long"))
-
-
+rm(list = c("mmse.data", "mmse.detrended.data"))
 
 #### Plot MMSE curves ####
 mmse.data.long <- mmse.data.long %>%
@@ -100,10 +98,17 @@ detrended.complexity <- detrended.mmse.long %>%
   summarise(complexity = sum(sampen)) %>%
   mutate(type = "detrended.complexity")
 
-complexity <- bind_rows(raw.complexity, detrended.complexity) %>%
+sample.entropy <- detrended.mmse.long %>%
+  group_by(id, trial) %>%
+  filter(scale == 1) %>%
+  mutate(type = "sample.entropy") %>%
+  rename(complexity = sampen) %>%
+  select(-scale, -prior.concussion)
+
+complexity <- bind_rows(raw.complexity, detrended.complexity, sample.entropy) %>%
   spread(type, complexity)
 
-#rm(list = c("raw.complexity", "detrended.complexity"))
+rm(list = c("raw.complexity", "detrended.complexity", "sample.entropy"))
 
 #### Composite data frame ####
 participants <- semi_join(participants, valid.trials) %>%
@@ -119,10 +124,11 @@ trial.outcomes <- semi_join(complexity, valid.participants) %>%
   left_join(dfa.data) %>%
   left_join(avp.data) %>%
   left_join(participants) %>%
+  left_join(trial.summary) %>%
   select(id, trial, block, order, gender, hand, gamer, prior.concussion, 
          LOC, amnesia, sx.current, age, height, weight, diagnosed.number, 
          suspected.number, concussion.number, diagnosed.recent, suspected.recent, 
-         raw.complexity, detrended.complexity, avp04, avp48, avp812, alpha)
+         rmse.V, detrended.complexity, sample.entropy, avp04, avp48, avp812, alpha)
 
 #### Summarise individual outcomes ####
 # Not ideal coding but functional
@@ -130,14 +136,15 @@ average.outcomes <- trial.outcomes %>%
   group_by(id, block, order, gender, hand, gamer, prior.concussion, LOC, 
            amnesia, sx.current, age, height, weight, diagnosed.number, 
            suspected.number, concussion.number) %>%
-  summarise_each(funs(mean, cv, n()), raw.complexity, detrended.complexity, avp04, avp48, avp812,
-                 alpha) %>%
+  summarise_each(funs(mean, cv, n()), rmse.V, detrended.complexity, sample.entropy,
+                 avp04, avp48, avp812, alpha) %>%
   ungroup() %>%
-  select(id:raw.complexity_n) %>%
-  rename(trials = raw.complexity_n) %>%
+  select(id:rmse.V_n) %>%
+  rename(trials = rmse.V_n) %>%
   mutate(dx.status = ifelse(diagnosed.number > 0 & suspected.number > 0, "Both",
-                            ifelse(diagnosed.number > 0 & suspected.number == 0, "Dx Only",
-                                   ifelse(diagnosed.number == 0 & suspected.number > 0, "Susp Only", "Uninjured"))))
+                            ifelse(diagnosed.number > 0 & suspected.number == 0, "Dx.Only",
+                                   ifelse(diagnosed.number == 0 & suspected.number > 0, "Susp.Only", "Uninjured"))))
+average.outcomes$dx.status <- factor(average.outcomes$dx.status)
 
 #### Descriptive statistics ####
 table1(participants,
@@ -171,6 +178,7 @@ for (i in 1:length(outcomes)){
 rm(list = c("a", "b", "c", "d", "panel.plot"))
 
 #### Scatterplots ####
+# Scatterplot matrices ----
 desc = c("age", "diagnosed.number", "suspected.number", "concussion.number")
 
 for (i in 1:length(outcomes)){
@@ -184,28 +192,64 @@ for (i in 1:length(outcomes)){
 rm(list = c("cols", "desc", "outcomes", "titles", "scat", "title"))
 
 
+# Two group scatterplot ----
+ggplot(data = average.outcomes, aes(x = detrended.complexity_mean,
+                                    y = alpha_mean,
+                                    color = prior.concussion)) +
+  geom_jitter(width = 0.2, size = 2)
+
+# Two group scatterplot with gender ----
+ggplot(data = average.outcomes, aes(x = detrended.complexity_mean,
+                                    y = alpha_mean,
+                                    color = prior.concussion,
+                                    shape = gender)) +
+  geom_jitter(width = 0.2, size = 2)
+# Four group scatterplot with gender ----
+ggplot(data = average.outcomes, aes(x = detrended.complexity_mean,
+                                    y = alpha_mean,
+                                    color = dx.status,
+                                    shape = gender)) +
+  geom_jitter(width = 0.2, size = 2)
+
+ggplot(data = average.outcomes, aes(x = detrended.complexity_mean,
+                                    y = dx.status,
+                                    color = gender)) + 
+  geom_point()
+
 #### Logistic Regression ####
 # Fit a logistic regression to predict concussion status based on complexity and
 # DFA. This will be a 10-fold cross-validated model using the modelr and purrr
 # packages.
-
-
+rm(list = c("avp.data", "complexity", "detrended.mmse.long", "dfa.data",
+          "trial.outcomes", "trial.summary", "valid.participants", "valid.trials"))
+          
 require(modelr)
+require(pROC)
 set.seed(2000000)
 
-concussion.crossval <- select(average.outcomes, id, gender, prior.concussion, raw.complexity_mean:alpha_cv) %>%
+concussion.crossval <- select(average.outcomes, id, gender, prior.concussion, rmse.V_mean:alpha_cv) %>%
   mutate(prior.concussion = ifelse(prior.concussion == "Yes", 1, 0)) %>%
   crossv_kfold(10)
 
-## Singular mean models
-concussion.models <- concussion.crossval %>%
+actual <-  mutate(concussion.crossval, 
+                  id = map(map(test, as.data.frame), "id", select),
+                  actual = map(map(test, as.data.frame), "prior.concussion", select)) %>%
+  select(actual) %>%
+  unnest() %>%
+  collect %>% .[["actual"]]
+
+### Singular mean models ----
+mean.models <- concussion.crossval %>%
   mutate(train = map(train, as_tibble)) %>%
-  mutate(rcomplex.model = map(train, ~ glm(prior.concussion ~ raw.complexity_mean,
+  mutate(rmse.model = map(train, ~ glm(prior.concussion ~ rmse.V_mean,
                                            family = binomial,
                                            data = .)),
          dtcomplex.model = map(train, ~ glm(prior.concussion ~ detrended.complexity_mean,
                                             family = binomial,
                                             data = .)),
+         sampen.model = map(train, ~glm(prior.concussion ~ sample.entropy_mean,
+                                        family = binomial,
+                                        data = .)),
          avp04.model = map(train, ~ glm(prior.concussion ~ avp04_mean,
                                         family = binomial,
                                         data = .)),
@@ -218,100 +262,262 @@ concussion.models <- concussion.crossval %>%
          dfa.model = map(train, ~ glm(prior.concussion ~ alpha_mean,
                                         family = binomial,
                                         data = .)),
-         gender.model = map(train, ~ glm(prior.concussion ~ gender,
-                                         family = binomial,
-                                         data = .)),
-         combo.model = map(train, ~ glm(prior.concussion ~ gender + detrended.complexity_mean + alpha_mean,
+         combo.model = map(train, ~ glm(prior.concussion ~ detrended.complexity_mean +
+                                          alpha_mean,
                                         family = binomial,
                                         data = .)),
-         complete.model = map(train, ~ glm(prior.concussion ~ gender + detrended.complexity_mean + 
+         complete.model = map(train, ~ glm(prior.concussion ~ detrended.complexity_mean + sample.entropy_mean +
                                              avp04_mean + avp48_mean + avp812_mean + alpha_mean,
                                            family = binomial,
                                            data = .)))
 
-concussion.predictions <- concussion.models %>%
-  mutate(rcomplex.pred = map2(rcomplex.model, test, type = "response", predict),
+### Singular mean model predictions ----
+mean.probs <- mean.models %>%
+  mutate(rmse.pred = map2(rmse.model, test, type = "response", predict),
          dtcomplex.pred = map2(dtcomplex.model, test, type = "response", predict),
+         sampen.pred = map2(sampen.model, test, type = "response", predict),
          avp04.pred = map2(avp04.model, test, type = "response", predict),
          avp48.pred = map2(avp48.model, test, type = "response", predict),
          avp812.pred = map2(avp812.model, test, type = "response", predict),
          alpha.pred = map2(dfa.model, test, type = "response", predict),
-         gender.pred = map2(gender.model, test, type = "response", predict),
          combo.pred = map2(combo.model, test, type = "response", predict),
          complete.pred = map2(complete.model, test, type = "response", predict),
          id = map(map(test, as.data.frame), "id", select),
          actual = map(map(test, as.data.frame), "prior.concussion", select)) %>%
-  select(id, actual, rcomplex.pred:complete.pred) %>%
-  unnest() %>%
-  mutate_at(vars(ends_with("pred")), funs(round_pred))
+  select(id, actual, rmse.pred:complete.pred) %>%
+  unnest()
 
-## Singular cv models
-concussion.models <- concussion.crossval %>%
+mean.thresholds <- mean.probs %>%
+  summarise_at(vars(ends_with("pred")),
+               function (x) coords(roc(actual, x, direction = "<"), 
+                                   "best", 
+                                   best.method = "youden",
+                                   ret = "threshold")[1])
+
+mean.predictions <- mean.probs %>%
+  mutate(rmse.pred = ifelse(rmse.pred > mean.thresholds$rmse.pred, 1,0),
+         dtcomplex.pred = ifelse(dtcomplex.pred > mean.thresholds$dtcomplex.pred, 1,0),
+         sampen.pred = ifelse(sampen.pred > mean.thresholds$sampen.pred, 1,0),
+         avp04.pred = ifelse(avp04.pred > mean.thresholds$avp04.pred, 1,0),
+         avp48.pred = ifelse(avp48.pred > mean.thresholds$avp48.pred, 1,0),
+         avp812.pred = ifelse(avp812.pred > mean.thresholds$avp812.pred, 1,0),
+         alpha.pred = ifelse(alpha.pred > mean.thresholds$alpha.pred, 1,0),
+         combo.pred = ifelse(combo.pred > mean.thresholds$combo.pred, 1,0),
+         complete.pred = ifelse(complete.pred > mean.thresholds$complete.pred, 1, 0))
+
+### Singular mean model performance ----
+mean.perf <- mean.predictions %>%
+  select(-id, -actual) %>%
+  summarise_at(vars(ends_with("pred")), funs(sens, specif, ppv, npv, acc, auc, auc.p)) %>%
+  gather(outcome, value) %>%
+  separate(outcome, c("Outcome", "Measure"), "_") %>%
+  spread(Measure, value) %>%
+  arrange(auc)
+
+
+
+### Gender mean models ----
+gender.mean.models <- concussion.crossval %>%
   mutate(train = map(train, as_tibble)) %>%
-  mutate(rcomplex.model = map(train, ~ glm(prior.concussion ~ raw.complexity_cv,
+  mutate(gender.model = map(train, ~ glm(prior.concussion ~ gender,
+                                                  family = binomial,
+                                                  data = .)),
+         rmse.model = map(train, ~ glm(prior.concussion ~ gender * rmse.V_mean,
                                            family = binomial,
                                            data = .)),
-         dtcomplex.model = map(train, ~ glm(prior.concussion ~ detrended.complexity_cv,
+         dtcomplex.model = map(train, ~ glm(prior.concussion ~ gender * detrended.complexity_mean,
                                             family = binomial,
                                             data = .)),
-         avp04.model = map(train, ~ glm(prior.concussion ~ avp04_cv,
+         sampen.model = map(train, ~glm(prior.concussion ~ gender * sample.entropy_mean,
                                         family = binomial,
                                         data = .)),
-         avp48.model = map(train, ~ glm(prior.concussion ~ avp48_cv,
+         avp04.model = map(train, ~ glm(prior.concussion ~ gender * avp04_mean,
                                         family = binomial,
                                         data = .)),
-         avp812.model = map(train, ~ glm(prior.concussion ~ avp812_cv,
+         avp48.model = map(train, ~ glm(prior.concussion ~ gender * avp48_mean,
+                                        family = binomial,
+                                        data = .)),
+         avp812.model = map(train, ~ glm(prior.concussion ~ gender * avp812_mean,
                                          family = binomial,
                                          data = .)),
-         dfa.model = map(train, ~ glm(prior.concussion ~ alpha_cv,
+         dfa.model = map(train, ~ glm(prior.concussion ~ gender * alpha_mean,
                                       family = binomial,
                                       data = .)),
-         gender.model = map(train, ~ glm(prior.concussion ~ gender,
-                                         family = binomial,
-                                         data = .)),
-         combo.model = map(train, ~ glm(prior.concussion ~ gender + detrended.complexity_cv +
-                                          alpha_cv,
-                                        family = binomial,
-                                        data = .)),
-         complete.model = map(train, ~ glm(prior.concussion ~ gender +detrended.complexity_cv + 
-                                             avp04_cv + avp48_cv + avp812_cv + alpha_cv,
-                                           family = binomial,
-                                           data = .)))
+         combo.model = map(train, ~ glm(prior.concussion ~ gender + detrended.complexity_mean +
+                                          alpha_mean + gender:detrended.complexity_mean +
+                                          gender:alpha_mean,
+                                      family = binomial,
+                                      data = .)))
 
-concussion.predictions <- concussion.models %>%
-  mutate(rcomplex.pred = map2(rcomplex.model, test, type = "response", predict),
+### Gender mean model predictions ----
+gender.mean.probs <- gender.mean.models %>%
+  mutate(gender.pred = map2(gender.model, test, type = "response", predict),
+         rmse.pred = map2(rmse.model, test, type = "response", predict),
          dtcomplex.pred = map2(dtcomplex.model, test, type = "response", predict),
+         sampen.pred = map2(sampen.model, test, type = "response", predict),
          avp04.pred = map2(avp04.model, test, type = "response", predict),
          avp48.pred = map2(avp48.model, test, type = "response", predict),
          avp812.pred = map2(avp812.model, test, type = "response", predict),
          alpha.pred = map2(dfa.model, test, type = "response", predict),
-         gender.pred = map2(gender.model, test, type = "response", predict),
-         combo.pred = map2(combo.model, test, type = "response", predict),
-         complete.pred = map2(complete.model, test, type = "response", predict),
+         combo.pred = map2(combo.model, test, type = 'response', predict),
          id = map(map(test, as.data.frame), "id", select),
          actual = map(map(test, as.data.frame), "prior.concussion", select)) %>%
-  select(id, actual, rcomplex.pred:complete.pred) %>%
-  unnest() %>%
-  mutate_at(vars(ends_with("pred")), funs(round_pred))
+  select(id, actual, gender.pred:combo.pred) %>%
+  unnest()
+
+gender.mean.thresholds <- gender.mean.probs %>%
+  summarise_at(vars(ends_with("pred")),
+               function (x) coords(roc(actual, x, direction = "<"), "best", ret = "threshold")[1])
+
+gender.mean.predictions <- gender.mean.probs %>%
+  mutate(gender.pred = ifelse(gender.pred > gender.mean.thresholds$gender.pred, 1, 0),
+         rmse.pred = ifelse(rmse.pred > gender.mean.thresholds$rmse.pred, 1,0),
+         dtcomplex.pred = ifelse(dtcomplex.pred > gender.mean.thresholds$dtcomplex.pred, 1,0),
+         sampen.pred = ifelse(sampen.pred > gender.mean.thresholds$sampen.pred, 1,0),
+         avp04.pred = ifelse(avp04.pred > gender.mean.thresholds$avp04.pred, 1,0),
+         avp48.pred = ifelse(avp48.pred > gender.mean.thresholds$avp48.pred, 1,0),
+         avp812.pred = ifelse(avp812.pred > gender.mean.thresholds$avp812.pred, 1,0),
+         alpha.pred = ifelse(alpha.pred > gender.mean.thresholds$alpha.pred, 1,0),
+         combo.pred = ifelse(combo.pred > gender.mean.thresholds$combo.pred, 1, 0))
+
+### Gender mean model performance ----
+gender.mean.perf <- gender.mean.predictions %>%
+  select(-id, -actual) %>%
+  summarise_at(vars(ends_with("pred")), funs(sens, specif, ppv, npv, acc, auc, auc.p)) %>%
+  gather(outcome, value) %>%
+  separate(outcome, c("Outcome", "Measure"), "_") %>%
+  spread(Measure, value) %>%
+  arrange(auc) %>%
+  select(Outcome, auc, auc.p, sens, specif, everything())
 
 
-### Using everything ####
-set.seed(2000000)
 
-concussion.crossval <- select(average.outcomes, gender, prior.concussion, raw.complexity_mean:alpha_cv) %>%
-  mutate(prior.concussion = ifelse(prior.concussion == "Yes", 1, 0)) %>%
-  crossv_kfold(10)
 
-## Singular mean models
-concussion.models <- concussion.crossval %>%
-  mutate(train = map(train, as_tibble)) %>%
-  mutate(model = map(train, ~ glm(prior.concussion ~ .,
-                                           family = binomial,
-                                           data = .)))
 
-concussion.predictions <- concussion.models %>%
-  mutate(pred = map2(model, test, type = "response", predict),
-         actual = map(map(test, as.data.frame), "prior.concussion", select)) %>%
-  select(actual, pred) %>%
-  unnest() %>%
-  mutate_at(vars(ends_with("pred")), funs(round_pred))         
+
+### Ensemble model ----
+# Simple majority vote ----
+simple.ensemble <- gender.mean.predictions %>%
+  select(-gender.pred) %>%
+  group_by(id, actual) %>%
+  gather(Outcome, Prediction, -id, -actual) %>%
+  summarise(newpred = mean(Prediction)) %>%
+  mutate(newpred = ifelse(newpred > 0.5, 1, 0))
+
+caret::confusionMatrix(simple.ensemble$newpred, 
+                       simple.ensemble$actual, 
+                       positive = "1")
+
+
+# Weighted majority ----
+weighted.ensemble <- gender.mean.probs %>%
+  select(-gender.pred) %>%
+  group_by(id, actual) %>%
+  gather(Outcome, Prediction, -id, -actual) %>%
+  summarise(newpred = mean(Prediction))
+
+weighted.thresh <- coords(roc(weighted.ensemble$actual,
+                              weighted.ensemble$newpred,
+                              direction = "<"),
+                          "best",
+                          best.method = "youden",
+                          ret = "threshold")
+
+weighted.ensemble <- mutate(weighted.ensemble,
+                            newpred = ifelse(newpred > weighted.thresh, 1, 0))
+
+caret::confusionMatrix(weighted.ensemble$newpred,
+                       weighted.ensemble$actual,
+                       positive = "1")
+
+verification::roc.area(weighted.ensemble$actual, weighted.ensemble$newpred)
+
+
+
+### For comparison with 80% sensitivity ----
+## Get thresholds ----
+sens.075.thresh <- gender.mean.probs %>%
+  summarise_at(vars(ends_with("pred")),
+               function (x) tail(as.vector(coords(roc(actual, x,
+                                                      direction = "<",
+                                                      partial.auc = c(1, 0.75),
+                                                      partial.auc.focus = "sensitivity"),
+                                                  x = "local maximas",
+                                                  ret = "threshold")),  n = 1))
+
+sens.08.thresh <- gender.mean.probs %>%
+  summarise_at(vars(ends_with("pred")),
+               function (x) tail(as.vector(coords(roc(actual, x,
+                                                      direction = "<",
+                                                      partial.auc = c(1, 0.8),
+                                                      partial.auc.focus = "sensitivity"),
+                                                  x = "local maximas",
+                                                  ret = "threshold")),  n = 1))
+
+sens.085.thresh <- gender.mean.probs %>%
+  summarise_at(vars(ends_with("pred")),
+               function (x) tail(as.vector(coords(roc(actual, x,
+                                                      direction = "<",
+                                                      partial.auc = c(1, 0.85),
+                                                      partial.auc.focus = "sensitivity"),
+                                                  x = "local maximas",
+                                                  ret = "threshold")),  n = 1))
+               
+
+# Sens = 0.75 ----
+sens.075.predictions <- gender.mean.probs %>%
+  mutate(rmse.pred = ifelse(rmse.pred > sens.075.thresh$rmse.pred, 1,0),
+         dtcomplex.pred = ifelse(dtcomplex.pred > sens.075.thresh$dtcomplex.pred, 1,0),
+         sampen.pred = ifelse(sampen.pred > sens.075.thresh$sampen.pred, 1,0),
+         avp04.pred = ifelse(avp04.pred > sens.075.thresh$avp04.pred, 1,0),
+         avp48.pred = ifelse(avp48.pred > sens.075.thresh$avp48.pred, 1,0),
+         avp812.pred = ifelse(avp812.pred > sens.075.thresh$avp812.pred, 1,0),
+         alpha.pred = ifelse(alpha.pred > sens.075.thresh$alpha.pred, 1,0),
+         gender.pred = ifelse(gender.pred > sens.075.thresh$gender.pred, 1,0),
+         combo.pred = ifelse(combo.pred > sens.075.thresh$combo.pred, 1,0))
+
+# Singular mean model performance
+sens.075.perf <- sens.075.predictions %>%
+  select(-id, -actual) %>%
+  summarise_at(vars(ends_with("pred")), funs(specif, ppv, npv, acc)) %>%
+  gather(outcome, value) %>%
+  separate(outcome, c("Outcome", "Measure"), "_") %>%
+  spread(Measure, value)
+# Sens = 0.8 ----
+sens.08.predictions <- gender.mean.probs %>%
+  mutate(rmse.pred = ifelse(rmse.pred > sens.08.thresh$rmse.pred, 1,0),
+         dtcomplex.pred = ifelse(dtcomplex.pred > sens.08.thresh$dtcomplex.pred, 1,0),
+         sampen.pred = ifelse(sampen.pred > sens.08.thresh$sampen.pred, 1,0),
+         avp04.pred = ifelse(avp04.pred > sens.08.thresh$avp04.pred, 1,0),
+         avp48.pred = ifelse(avp48.pred > sens.08.thresh$avp48.pred, 1,0),
+         avp812.pred = ifelse(avp812.pred > sens.08.thresh$avp812.pred, 1,0),
+         alpha.pred = ifelse(alpha.pred > sens.08.thresh$alpha.pred, 1,0),
+         gender.pred = ifelse(gender.pred > sens.08.thresh$gender.pred, 1,0),
+         combo.pred = ifelse(combo.pred > sens.08.thresh$combo.pred, 1,0))
+
+# Singular mean model performance
+sens.08.perf <- sens.08.predictions %>%
+  select(-id, -actual) %>%
+  summarise_at(vars(ends_with("pred")), funs(specif, ppv, npv, acc)) %>%
+  gather(outcome, value) %>%
+  separate(outcome, c("Outcome", "Measure"), "_") %>%
+  spread(Measure, value)
+# Sens = 0.85 ----
+sens.085.predictions <- gender.mean.probs %>%
+  mutate(rmse.pred = ifelse(rmse.pred > sens.085.thresh$rmse.pred, 1,0),
+         dtcomplex.pred = ifelse(dtcomplex.pred > sens.085.thresh$dtcomplex.pred, 1,0),
+         sampen.pred = ifelse(sampen.pred > sens.085.thresh$sampen.pred, 1,0),
+         avp04.pred = ifelse(avp04.pred > sens.085.thresh$avp04.pred, 1,0),
+         avp48.pred = ifelse(avp48.pred > sens.085.thresh$avp48.pred, 1,0),
+         avp812.pred = ifelse(avp812.pred > sens.085.thresh$avp812.pred, 1,0),
+         alpha.pred = ifelse(alpha.pred > sens.085.thresh$alpha.pred, 1,0),
+         gender.pred = ifelse(gender.pred > sens.085.thresh$gender.pred, 1,0),
+         combo.pred = ifelse(combo.pred > sens.085.thresh$combo.pred, 1,0))
+
+# Singular mean model performance
+sens.085.perf <- sens.085.predictions %>%
+  select(-id, -actual) %>%
+  summarise_at(vars(ends_with("pred")), funs(specif, ppv, npv, acc)) %>%
+  gather(outcome, value) %>%
+  separate(outcome, c("Outcome", "Measure"), "_") %>%
+  spread(Measure, value)

@@ -130,15 +130,49 @@ round_pred <- function(x){
   round(x + 0.00001)
 }
 
-predictive_ability <- function(real, pred){
-  require(caret)
-  
-  confusionMatrix(pred, real)
-}
-
 editNAN <- function(x){
   return(x[is.nan(x)] <- 0)
 }
+
+sens <- function(pred){
+  require(caret)
+  
+  confusionMatrix(pred, actual, positive = "1")$byClass[1]
+}
+
+specif <- function(pred){
+  require(caret)
+  
+  confusionMatrix(pred, actual, positive = "1")$byClass[2]
+}
+
+ppv <- function(pred){
+  require(caret)
+  
+  confusionMatrix(pred, actual, positive = "1")$byClass[3]
+}
+
+npv <- function(pred){
+  require(caret)
+  
+  confusionMatrix(pred, actual, positive = "1")$byClass[4]
+}
+
+acc <- function(pred){
+  require(caret)
+  
+  confusionMatrix(pred, actual, positive = "1")$overall[1]
+}
+
+auc <- function(pred){
+  verification::roc.area(actual, pred)$A
+}
+
+auc.p <- function(pred){
+  verification::roc.area(actual, pred)$p.value
+}
+
+
     
   
   
