@@ -347,7 +347,18 @@ gender.mean.models <- concussion.crossval %>%
                                           alpha_mean + gender:detrended.complexity_mean +
                                           gender:alpha_mean,
                                       family = binomial,
-                                      data = .)))
+                                      data = .)),
+         complete.model = map(train, ~ glm(prior.concussion ~ gender + detrended.complexity_mean +
+                                          alpha_mean + sample.entropy_mean + avp04_mean +
+                                          avp48_mean + avp812_mean + 
+                                          gender:detrended.complexity_mean +
+                                          gender:alpha_mean + 
+                                          gender:sample.entropy_mean + 
+                                          gender:avp04_mean + 
+                                          gender:avp48_mean +  
+                                          gender:avp812_mean,
+                                        family = binomial,
+                                        data = .)))
 
 ### Gender mean model predictions ----
 gender.mean.probs <- gender.mean.models %>%
@@ -360,9 +371,10 @@ gender.mean.probs <- gender.mean.models %>%
          avp812.pred = map2(avp812.model, test, type = "response", predict),
          alpha.pred = map2(dfa.model, test, type = "response", predict),
          combo.pred = map2(combo.model, test, type = 'response', predict),
+         complete.pred = map2(complete.model, test, type = "response", predict),
          id = map(map(test, as.data.frame), "id", select),
          actual = map(map(test, as.data.frame), "prior.concussion", select)) %>%
-  select(id, actual, gender.pred:combo.pred) %>%
+  select(id, actual, gender.pred:complete.pred) %>%
   unnest()
 
 gender.mean.thresholds <- gender.mean.probs %>%
@@ -378,7 +390,8 @@ gender.mean.predictions <- gender.mean.probs %>%
          avp48.pred = ifelse(avp48.pred > gender.mean.thresholds$avp48.pred, 1,0),
          avp812.pred = ifelse(avp812.pred > gender.mean.thresholds$avp812.pred, 1,0),
          alpha.pred = ifelse(alpha.pred > gender.mean.thresholds$alpha.pred, 1,0),
-         combo.pred = ifelse(combo.pred > gender.mean.thresholds$combo.pred, 1, 0))
+         combo.pred = ifelse(combo.pred > gender.mean.thresholds$combo.pred, 1, 0),
+         complete.pred = ifelse(complete.pred > gender.mean.thresholds$complete.pred, 1, 0))
 
 ### Gender mean model performance ----
 gender.mean.perf <- gender.mean.predictions %>%
@@ -521,3 +534,25 @@ sens.085.perf <- sens.085.predictions %>%
   gather(outcome, value) %>%
   separate(outcome, c("Outcome", "Measure"), "_") %>%
   spread(Measure, value)
+
+# Weighted ensemble sens = 0.8
+weighted.ensemble2 <- gender.mean.probs %>%
+  select(-gender.pred) %>%
+  group_by(id, actual) %>%
+  gather(Outcome, Prediction, -id, -actual) %>%
+  summarise(newpred = mean(Prediction))
+
+thresh <- coords(roc(weighted.ensemble2$actual,
+                     weighted.ensemble2$newpred,
+                     direction = "<"),
+                 "best",
+                 ret = "threshold")
+
+weighted.ensemble2 <- mutate(weighted.ensemble2,
+                            newpred = ifelse(newpred > thresh, 1, 0))
+
+caret::confusionMatrix(weighted.ensemble$newpred,
+                       weighted.ensemble$actual,
+                       positive = "1")
+
+verification::roc.area(weighted.ensemble$actual, weighted.ensemble$newpred)
