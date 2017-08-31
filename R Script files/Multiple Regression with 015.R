@@ -139,7 +139,7 @@ trial.outcomes <- left_join(complexity, avp.data) %>%
 
 #### Summarise individual outcomes ####
 average.outcomes <- trial.outcomes %>%
-  group_by(id) %>%
+  group_by(id, center.N) %>%
   summarise_each(funs(mean, cv, n()), rmse.V, raw.complexity, detrended.complexity, 
                  avp04, avp48, avp812) %>%
   ungroup() %>%
@@ -149,14 +149,14 @@ average.outcomes <- trial.outcomes %>%
   select(id, order, block, trials, gender:tfi.max.nom, everything()) 
 
 #### Descriptive statistics ####
-table1(participants,
+table1(average.outcomes,
        height, weight, age, gender, hand, gamer, LOC, amnesia,
        as.factor(diagnosed.number), as.factor(suspected.number), as.factor(concussion.number),
        as.factor(total.loc), as.factor(total.retrograde), as.factor(total.anterograde),
        splitby = ~prior.concussion,
        test = TRUE,
        format_output = "full",
-       output_type = "markdown")  
+       output_type = "text")  
 
 #### Boxplot outcomes ####
 require(cowplot)

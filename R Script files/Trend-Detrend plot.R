@@ -69,14 +69,14 @@ detrended.plot <- filter(signal.data, X == 2) %>%
       )
     )
 
-signal.plot <- plot_grid(original.plot, detrended.plot,
-                         labels = c("A", "B"),
+signal.plot <- plot_grid(original.plot, detrended.plot, curve.plot,
+                         labels = c("A", "B", "C"),
                          label_size = 24,
                          align = "vh",
-                         hjust = -0.5,
+                         hjust = -2,
                          ncol = 1)
 
 save_plot(paste(my_dir, "/Signal.svg", sep = ""),
           signal.plot,
           base_width = 14,
-          base_height = 6)
+          base_height = 10)

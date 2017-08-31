@@ -11,7 +11,7 @@
 require(ggplot2)
 require(cowplot)
 require(extrafont)
-my_dir <- "C:/Users/Adam/Dropbox/Adam/Dissertation/Images/Chapter 3"
+my_dir <- "C:/Users/adamraikes/Dropbox/Manuscript Submissions/Dissertation/Chapter 3/Participant mean values/Images"
 
 #### Complexity plots ####
 # Alternative mean model ----
@@ -31,7 +31,7 @@ dt.mean.plot <- ggplot(data = average.outcomes, aes(x = total.concussions,
   theme(
     title = element_text(family ="Arial", size = 24),
     axis.text = element_text(family ="Arial", size = 24),
-    legend.title = element_text(family = "Arial", size = 12),
+    legend.title = element_text(family = "Arial", size = 24),
     legend.text = element_text(family ="Arial", size = 24),
     axis.line.x = element_line(colour = "black", linetype = "solid",
                                size = 1),
@@ -98,8 +98,13 @@ ci.plot <- plot_grid(ci.row, leg.row, ncol = 1, rel_heights = c(1, 0.15))
 
 
 
+# save_plot(paste(my_dir, "/Complexity.svg", sep = ""),
+#           ci.plot,
+#           base_width = 14,
+#           base_height = 6)
+
 save_plot(paste(my_dir, "/Complexity.svg", sep = ""),
-          ci.plot,
+          dt.mean.plot,
           base_width = 14,
           base_height = 6)
 
@@ -313,6 +318,7 @@ avp48.mean.plot <- ggplot(data = average.outcomes, aes(x = diagnosed.number,
               aes(linetype = LOC)) +
   xlab("Number of diagnosed concussions") +
   ylab("4-8 Hertz Average Power") +
+  ylim(c(0,0.45)) +
   scale_colour_manual(name = "Gender",
                       values = c("#ca0020", "#0571b0")) +
   scale_linetype_manual(name = "LOC",
@@ -327,7 +333,7 @@ avp48.mean.plot <- ggplot(data = average.outcomes, aes(x = diagnosed.number,
   theme(
     title = element_text(family ="Arial", size = 24),
     axis.text = element_text(family ="Arial", size = 24),
-    legend.title = element_text(family = "Arial", size = 10),
+    legend.title = element_text(family = "Arial", size = 24),
     legend.text = element_text(family ="Arial", size = 24),
     legend.key.size = unit(0.5, "in"),
     axis.line.x = element_line(colour = "black", linetype = "solid",
@@ -402,6 +408,11 @@ save_plot(paste(my_dir, "/AvP48.svg", sep = ""),
           base_width = 18,
           base_height = 7)
 
+save_plot(paste(my_dir, "/AvP48.svg", sep = ""),
+          avp48.mean.plot,
+          base_width = 14,
+          base_height = 6)
+
 
 
 #### AvP 812 plots ####
@@ -424,12 +435,14 @@ avp812.mean.plot <- ggplot(data = average.outcomes, aes(x = suspected.number,
                                    "1 concussion, LOC")) +
   guides(colour = guide_legend(override.aes = list(linetype = c(0,0),
                                                    shape = c(16,16),
-                                                   size = 4))) + 
+                                                   size = 4)),
+         linetype = guide_legend(override.aes = list(linetype = c(1,2,3),
+                                                     color = c("black", "black", "black")))) + 
   theme_classic() +
   theme(
     title = element_text(family ="Arial", size = 24),
     axis.text = element_text(family ="Arial", size = 24),
-    legend.title = element_text(family = "Arial", size = 10),
+    legend.title = element_text(family = "Arial", size = 24),
     legend.text = element_text(family ="Arial", size = 24),
     legend.key.size = unit(0.5, "in"),
     axis.line.x = element_line(colour = "black", linetype = "solid",
@@ -499,3 +512,21 @@ avp812.plot <- plot_grid(avp812.row, leg.row, ncol = 2, rel_widths = c(0.5, 0.2)
 save_plot(paste(my_dir, "/AvP812.svg", sep = ""),
           avp812.plot,
           base_height = 14)
+
+save_plot(paste(my_dir, "/AvP812.svg", sep = ""),
+          avp812.mean.plot,
+          base_width = 14,
+          base_height = 6)
+
+
+allplot.row <- plot_grid(dt.mean.plot, avp48.mean.plot, avp812.mean.plot,
+                         labels = c("A", "B", "C"),
+                         align = "vh",
+                         hjust = -0.5,
+                         label_size = 24,
+                         ncol = 1)
+
+save_plot(paste(my_dir, "/All Plots.svg", sep = ""),
+          allplot.row,
+          base_width = 14,
+          base_height = 6)
