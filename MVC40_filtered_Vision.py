@@ -3,13 +3,13 @@ import os
 import re
 from datetime import datetime
 
-import afa
-import entropy
+from physComplex import afa
+from physComplex import entropy
 import pandas as pd
 import scipy.io as sio
 import scipy.signal as signal
-import dfa
-import spectral
+from physComplex import dfa
+from physComplex import spectral
 
 pd.set_option('expand_frame_repr', False)
 
